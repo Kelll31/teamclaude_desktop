@@ -6,7 +6,7 @@
 import { Menu, Tray, type NativeImage } from 'electron';
 import type { MessageKey, Translate } from '../shared/i18n';
 import type { PageId } from '../shared/ipc';
-import type { BackendState } from '../shared/types';
+import type { BackendState, RoutingProfile } from '../shared/types';
 
 export interface TrayActions {
   show(page?: PageId): void;
@@ -14,6 +14,32 @@ export interface TrayActions {
   stop(): void;
   openDashboard(): void;
   quit(): void;
+  applyProfile(id: string): void;
+  toggleWidget(): void;
+}
+
+export interface TrayExtras {
+  profiles: RoutingProfile[];
+  widget: boolean;
+}
+
+/** Windows cuts tray tooltips at 127 characters. */
+const TOOLTIP_MAX = 127;
+
+/** "TeamClaude — Proxy: running" plus one line per current account with its quota. */
+export function trayTooltip(state: BackendState, t: Translate): string {
+  const lines = [`TeamClaude — ${trayStatusLabel(state, t)}`];
+  const status = state.status;
+  if (status) {
+    for (const name of Object.values(status.currentAccounts)) {
+      const a = status.accounts.find(acc => acc.name === name);
+      if (!a) continue;
+      const pct = (u: number | null) => (u === null ? '—' : `${Math.round(u * 100)}%`);
+      lines.push(`${a.name}: 5h ${pct(a.fiveHour.utilization)} · 7d ${pct(a.weekly.utilization)}`);
+    }
+  }
+  const text = lines.join('\n');
+  return text.length > TOOLTIP_MAX ? `${text.slice(0, TOOLTIP_MAX - 1)}…` : text;
 }
 
 export function trayStatusLabel(state: BackendState, t: Translate): string {
@@ -23,6 +49,9 @@ export function trayStatusLabel(state: BackendState, t: Translate): string {
 }
 
 export class AppTray {
+  private extras: TrayExtras = { profiles: [], widget: false };
+  private last: BackendState | null = null;
+
   private constructor(private readonly tray: Tray, private readonly actions: TrayActions, private readonly t: () => Translate) {
     tray.setToolTip('TeamClaude Desktop');
     // Linux trays usually ignore click; Windows opens the window on click.
@@ -37,13 +66,22 @@ export class AppTray {
     }
   }
 
+  setExtras(extras: TrayExtras): void {
+    this.extras = extras;
+    if (this.last) this.update(this.last);
+  }
+
   update(state: BackendState): void {
+    // A state or settings event can still arrive while the app quits.
+    if (this.tray.isDestroyed()) return;
+    this.last = state;
     const t = this.t();
     const running = state.phase === 'running';
     const busy = state.phase === 'starting' || state.phase === 'stopping';
     const canStop = running && state.ownership === 'owned';
     const status = trayStatusLabel(state, t);
-    this.tray.setToolTip(`TeamClaude — ${status}`);
+    this.tray.setToolTip(trayTooltip(state, t));
+    const profiles = this.extras.profiles.map(p => ({ label: p.name, enabled: running, click: () => this.actions.applyProfile(p.id) }));
     this.tray.setContextMenu(Menu.buildFromTemplate([
       { label: t('tray.open'), click: () => this.actions.show() },
       { label: status, enabled: false },
@@ -54,11 +92,14 @@ export class AppTray {
       { label: t('tray.logs'), click: () => this.actions.show('logs') },
       { label: t('tray.settings'), click: () => this.actions.show('settings') },
       { type: 'separator' },
+      ...(profiles.length ? [{ label: t('tray.profiles'), submenu: profiles }] : []),
+      { label: t('tray.widget'), type: 'checkbox', checked: this.extras.widget, click: () => this.actions.toggleWidget() },
+      { type: 'separator' },
       { label: t('tray.quit'), click: () => this.actions.quit() },
     ]));
   }
 
   destroy(): void {
-    this.tray.destroy();
+    if (!this.tray.isDestroyed()) this.tray.destroy();
   }
 }

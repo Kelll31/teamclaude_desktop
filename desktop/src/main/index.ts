@@ -5,8 +5,10 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { app, BrowserWindow, nativeImage, Notification, type NativeImage } from 'electron';
+import { app, BrowserWindow, globalShortcut, nativeImage, Notification, type NativeImage } from 'electron';
 import { ActivityLog, isEmptyDelta } from '../shared/activity';
+import { runoutAlerts } from '../shared/forecast';
+import { nextAccount } from '../shared/usage';
 import { languageForLocale, translator, type Translate } from '../shared/i18n';
 import { EVENT_CHANNEL, type DesktopEvent, type PageId } from '../shared/ipc';
 import type { BackendState, DesktopSettings } from '../shared/types';
@@ -20,18 +22,19 @@ import { JobRunner } from '../services/job-runner';
 import { LogBuffer } from '../services/log-buffer';
 import { describeError } from '../services/sanitize';
 import { OwnedPidFile, SettingsStore } from '../services/settings-store';
-import { createHandlers, openDashboard, type HandlerContext } from './handlers';
+import { applyProfile, createHandlers, openDashboard, type HandlerContext } from './handlers';
 import { registerIpc } from './ipc';
 import { Notifier } from './notifications';
 import { AppTray } from './tray';
 import { createAppUpdater } from './updater';
-import { createMainWindow, rendererUrl } from './window';
+import { createMainWindow, createWidgetWindow, rendererUrl } from './window';
 
 const POLL_VISIBLE_MS = 2000;
 const POLL_HIDDEN_MS = 10_000;
 const MIN_BACKEND_VERSION = '1.1.0';
 
 let mainWindow: BrowserWindow | null = null;
+let widgetWindow: BrowserWindow | null = null;
 let tray: AppTray | null = null;
 let quitting = false;
 let shutdownDone = false;
@@ -53,7 +56,16 @@ app.on('web-contents-created', (_event, contents) => {
 });
 
 function send(event: DesktopEvent): void {
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(EVENT_CHANNEL, event);
+  for (const win of [mainWindow, widgetWindow]) {
+    if (win && !win.isDestroyed()) win.webContents.send(EVENT_CHANNEL, event);
+  }
+}
+
+function notify(title: string, body: string, onClick?: () => void): void {
+  if (!Notification.isSupported()) return;
+  const n = new Notification({ title, body });
+  if (onClick) n.on('click', onClick);
+  n.show();
 }
 
 function showWindow(page?: PageId): void {
@@ -162,12 +174,26 @@ async function init(): Promise<void> {
   });
 
   const history = new ActivityLog();
+  // Each forecast run-out is announced once (key: account, window, reset).
+  const announced = new Set<string>();
+  const announceRunouts = (state: BackendState) => {
+    if (!state.status || !settings.get().notifications.quotaSoon) return;
+    const now = Date.now();
+    for (const alert of runoutAlerts(state.status.accounts, history.history().quota, now)) {
+      if (announced.has(alert.key)) continue;
+      announced.add(alert.key);
+      const minutes = Math.max(1, Math.round((alert.runout.at - now) / 60_000));
+      const window = alert.runout.window === 'fiveHour' ? t()('forecast.fiveHour') : alert.runout.family ?? t()('forecast.weekly');
+      notify(t()('n.quotaSoonTitle', { name: alert.account.name }), t()('n.quotaSoonBody', { window, minutes }), () => showWindow('accounts'));
+    }
+  };
   manager.on('state', (state: BackendState) => {
     const delta = history.observe(state);
     send({ type: 'backend', state });
     if (!isEmptyDelta(delta)) send({ type: 'history', delta });
     tray?.update(state);
     notifier.handle(state);
+    announceRunouts(state);
   });
   logs.onLines(lines => send({ type: 'log', lines }));
   jobs.on('job', job => send({ type: 'job', job }));
@@ -175,6 +201,49 @@ async function init(): Promise<void> {
   jobs.on('done', () => { void manager.refresh(); });
 
   const indexHtml = join(app.getAppPath(), 'out', 'renderer', 'index.html');
+  const preload = join(__dirname, '..', 'preload', 'index.js');
+
+  const syncTray = () => tray?.setExtras({ profiles: settings.get().profiles, widget: !!widgetWindow });
+  const applyWidget = (on: boolean) => {
+    if (!on) {
+      if (widgetWindow && !widgetWindow.isDestroyed()) widgetWindow.destroy();
+      widgetWindow = null;
+      return;
+    }
+    if (widgetWindow && !widgetWindow.isDestroyed()) return;
+    widgetWindow = createWidgetWindow({ preload, indexHtml, icon, devTools: !app.isPackaged });
+    widgetWindow.on('closed', () => {
+      widgetWindow = null;
+      // On quit the tray is already gone and the setting must survive.
+      if (quitting) return;
+      // Closed from the widget itself: remember that.
+      if (settings.get().widget) send({ type: 'settings', settings: settings.update({ widget: false }) });
+      syncTray();
+    });
+  };
+
+  const switchToNext = async () => {
+    const state = manager.getState();
+    const status = state.status;
+    if (state.phase !== 'running' || !status) return;
+    const [provider, current] = Object.entries(status.currentAccounts)[0] ?? ['anthropic', null];
+    const next = nextAccount(status.accounts, provider, current);
+    if (!next) {
+      notify('TeamClaude', t()('n.hotkeyNone'));
+      return;
+    }
+    const r = await manager.control('/teamclaude/switch', { account: next.name });
+    notify('TeamClaude', r.ok ? t()('n.hotkeySwitched', { name: next.name }) : r.error ?? t()('h.switchFailed'));
+  };
+  const applyHotkey = (enabled: boolean, accelerator: string) => {
+    globalShortcut.unregisterAll();
+    if (!enabled) return;
+    try {
+      if (!globalShortcut.register(accelerator, () => { void switchToNext(); })) logs.note(t()('h.hotkeyTaken', { key: accelerator }));
+    } catch (err) {
+      logs.note(t()('h.hotkeyTaken', { key: `${accelerator} (${describeError(err)})` }));
+    }
+  };
   const ctx: HandlerContext = {
     manager,
     jobs,
@@ -193,6 +262,9 @@ async function init(): Promise<void> {
       if (next.autoUpdate !== previous.autoUpdate) appUpdater.applyAuto(next.autoUpdate);
       if (next.autoUpdateCore !== previous.autoUpdateCore) coreUpdater.applyAuto(next.autoUpdateCore);
       if (next.language !== previous.language) tray?.update(manager.getState());
+      if (next.widget !== previous.widget) applyWidget(next.widget);
+      if (next.hotkeyEnabled !== previous.hotkeyEnabled || next.hotkey !== previous.hotkey) applyHotkey(next.hotkeyEnabled, next.hotkey);
+      if (next.profiles !== previous.profiles || next.widget !== previous.widget) syncTray();
       send({ type: 'settings', settings: next });
     },
   };
@@ -201,7 +273,7 @@ async function init(): Promise<void> {
   const launchedAtLogin = process.argv.includes(AUTOSTART_ARG);
   const initial = settings.get();
   mainWindow = createMainWindow({
-    preload: join(__dirname, '..', 'preload', 'index.js'),
+    preload,
     indexHtml,
     icon,
     show: !(initial.startMinimized || launchedAtLogin),
@@ -216,8 +288,18 @@ async function init(): Promise<void> {
       stop: () => { void manager.stop(); },
       openDashboard: () => { openDashboard(ctx); },
       quit: () => app.quit(),
+      applyProfile: id => {
+        void applyProfile(ctx, id).then(r => notify('TeamClaude', r.message));
+      },
+      toggleWidget: () => {
+        const next = settings.update({ widget: !settings.get().widget });
+        applyWidget(next.widget);
+        send({ type: 'settings', settings: next });
+        syncTray();
+      },
     }, t);
     tray?.update(manager.getState());
+    syncTray();
   }
   // Without a tray, a hidden window could not be brought back.
   if (!tray && !mainWindow.isVisible()) mainWindow.once('ready-to-show', () => mainWindow?.show());
@@ -242,12 +324,15 @@ async function init(): Promise<void> {
   manager.startPolling(mainWindow.isVisible() ? POLL_VISIBLE_MS : POLL_HIDDEN_MS);
   appUpdater.start();
   coreUpdater.start();
+  applyWidget(initial.widget);
+  applyHotkey(initial.hotkeyEnabled, initial.hotkey);
 
   app.on('before-quit', event => {
     quitting = true;
     if (shutdownDone) return;
     event.preventDefault();
     jobs.cancelAll();
+    globalShortcut.unregisterAll();
     manager.shutdown({ stopOwned: true })
       .catch(err => console.error('Shutdown error:', describeError(err)))
       .finally(() => {

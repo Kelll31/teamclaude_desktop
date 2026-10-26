@@ -9,7 +9,7 @@
 // fall back to, and an app update that ships a newer bundled core wins over
 // an older download.
 
-import { createHash } from 'node:crypto';
+import { createHash, createPublicKey, verify } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import https from 'node:https';
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
@@ -26,12 +26,39 @@ export const PACKAGE_NAME = '@karpeleslab/teamclaude';
 export const FIRST_CHECK_DELAY_MS = 2 * 60_000;
 export const CHECK_INTERVAL_MS = 6 * 60 * 60_000;
 export const MAX_TARBALL_BYTES = 20 * 1024 * 1024;
+/** The registry's signing keys, the ones `npm audit signatures` checks against. */
+export const REGISTRY_KEYS_URL = 'https://registry.npmjs.org/-/npm/v1/keys';
+/** The full packument; only read for publish times. */
+export const PACKUMENT_URL = 'https://registry.npmjs.org/@karpeleslab%2fteamclaude';
+const SIGNING_ALGORITHM = 'ecdsa-sha2-nistp256';
 const STATE_FILE = 'state.json';
+
+export interface RegistrySignature {
+  keyid: string;
+  sig: string;
+}
 
 export interface CoreManifest {
   version: string;
   tarball: string;
   integrity: string;
+  signatures: RegistrySignature[];
+}
+
+export interface RegistryKey {
+  keyid: string;
+  keytype: string;
+  scheme: string;
+  key: string;
+  expires: string | null;
+}
+
+function parseSignatures(raw: unknown): RegistrySignature[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((s): s is Record<string, unknown> => !!s && typeof s === 'object')
+    .filter(s => typeof s.keyid === 'string' && s.keyid !== '' && typeof s.sig === 'string' && s.sig !== '')
+    .map(s => ({ keyid: s.keyid as string, sig: s.sig as string }));
 }
 
 /** The registry's answer for `latest`, accepted only in the exact shape npm publishes. */
@@ -46,7 +73,64 @@ export function parseManifest(body: unknown): CoreManifest {
   const expected = `https://registry.npmjs.org/${PACKAGE_NAME}/-/teamclaude-${version}.tgz`;
   if (dist.tarball !== expected) throw new Error(`unexpected tarball location: ${String(dist.tarball)}`);
   if (typeof dist.integrity !== 'string' || !dist.integrity.startsWith('sha512-')) throw new Error('the release has no sha512 checksum');
-  return { version, tarball: expected, integrity: dist.integrity };
+  const signatures = parseSignatures(dist.signatures);
+  if (signatures.length === 0) throw new Error('the release carries no npm registry signature');
+  return { version, tarball: expected, integrity: dist.integrity, signatures };
+}
+
+/** The registry's `/-/npm/v1/keys` answer; malformed entries are dropped. */
+export function parseRegistryKeys(body: unknown): RegistryKey[] {
+  const keys = body && typeof body === 'object' ? (body as { keys?: unknown }).keys : null;
+  if (!Array.isArray(keys)) throw new Error('the registry did not list its signing keys');
+  return keys
+    .filter((k): k is Record<string, unknown> => !!k && typeof k === 'object')
+    .filter(k => typeof k.keyid === 'string' && typeof k.keytype === 'string' && typeof k.scheme === 'string'
+      && typeof k.key === 'string' && (k.expires === null || typeof k.expires === 'string'))
+    .map(k => ({ keyid: k.keyid as string, keytype: k.keytype as string, scheme: k.scheme as string, key: k.key as string, expires: k.expires as string | null }));
+}
+
+/** Keys of the right algorithm that could have signed this manifest. */
+function candidateKeys(manifest: CoreManifest, keys: RegistryKey[]): RegistryKey[] {
+  const ids = new Set(manifest.signatures.map(s => s.keyid));
+  return keys.filter(k => ids.has(k.keyid) && k.keytype === SIGNING_ALGORITHM && k.scheme === SIGNING_ALGORITHM);
+}
+
+/** Whether verifying needs the publish time (a signing key has an expiry). */
+export function needsPublishTime(manifest: CoreManifest, keys: RegistryKey[]): boolean {
+  return candidateKeys(manifest, keys).some(k => k.expires !== null);
+}
+
+/** The publish time of `version` from a full packument, or null. */
+export function publishTime(packument: unknown, version: string): number | null {
+  const time = packument && typeof packument === 'object' ? (packument as { time?: unknown }).time : null;
+  const raw = time && typeof time === 'object' ? (time as Record<string, unknown>)[version] : null;
+  if (typeof raw !== 'string') return null;
+  const ms = Date.parse(raw);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function keyValidAt(key: RegistryKey, publishedAt: number | null): boolean {
+  if (key.expires === null) return true;
+  const expires = Date.parse(key.expires);
+  return publishedAt !== null && Number.isFinite(expires) && publishedAt < expires;
+}
+
+/**
+ * The check `npm audit signatures` makes: an ECDSA P-256/SHA-256 signature by a
+ * current registry key over `${name}@${version}:${integrity}`.
+ */
+export function verifyRegistrySignature(manifest: CoreManifest, name: string, keys: RegistryKey[], publishedAt: number | null): boolean {
+  const message = Buffer.from(`${name}@${manifest.version}:${manifest.integrity}`, 'utf8');
+  const usable = candidateKeys(manifest, keys).filter(k => keyValidAt(k, publishedAt));
+  return manifest.signatures.some(({ keyid, sig }) => usable.some(k => {
+    if (k.keyid !== keyid) return false;
+    try {
+      const publicKey = createPublicKey({ key: Buffer.from(k.key, 'base64'), format: 'der', type: 'spki' });
+      return verify('sha256', message, publicKey, Buffer.from(sig, 'base64'));
+    } catch {
+      return false;
+    }
+  }));
 }
 
 export function matchesIntegrity(data: Buffer, integrity: string): boolean {
@@ -298,6 +382,7 @@ export class CoreUpdater extends EventEmitter {
     const store = this.opts.store;
     let location: BackendLocation;
     try {
+      await this.verifySignature(manifest);
       const tarball = await this.download(manifest.tarball, MAX_TARBALL_BYTES);
       if (!matchesIntegrity(tarball, manifest.integrity)) throw new Error('the download does not match the registry checksum');
       location = store.unpack(version, tarball);
@@ -325,6 +410,14 @@ export class CoreUpdater extends EventEmitter {
     this.set({ phase: 'up-to-date', active: version, source: 'downloaded', rolledBack: null });
     this.emit('installed', version);
     return this.state;
+  }
+
+  private async verifySignature(manifest: CoreManifest): Promise<void> {
+    const keys = parseRegistryKeys(await this.getJson(REGISTRY_KEYS_URL, 10_000));
+    const publishedAt = needsPublishTime(manifest, keys)
+      ? publishTime(await this.getJson(PACKUMENT_URL, 30_000), manifest.version)
+      : null;
+    if (!verifyRegistrySignature(manifest, PACKAGE_NAME, keys, publishedAt)) throw new Error('the release is not signed by the npm registry');
   }
 
   /** One operation at a time; a call made while another runs gets `whenBusy()`. */

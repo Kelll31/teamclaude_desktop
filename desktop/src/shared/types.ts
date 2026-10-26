@@ -84,6 +84,30 @@ export interface AccountView {
    * i.e. it predates that mode.
    */
   recentRequests: number | null;
+  /** Token totals the server has counted for this account; null = not reported. */
+  usage: TokenUsage | null;
+  /** The server's burn-rate forecast, one per weekly bucket it has a rate for. */
+  forecast: ForecastView[];
+}
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+}
+
+export interface ForecastView {
+  /** Server bucket key: 'unified7d' (shared weekly) or a model-scoped one. */
+  bucket: string;
+  /** null for the shared weekly window, else the model family ("Sonnet"). */
+  family: string | null;
+  ratePerHour: number | null;
+  /** 0–1: the utilization at which rotation moves off the account. */
+  threshold: number;
+  /** Epoch ms when the threshold is reached at the learned rate, or null. */
+  reachesThresholdAt: number | null;
+  resetAt: number | null;
 }
 
 /** The argument of `teamclaude distribute`; `on` is the even mode. */
@@ -167,6 +191,8 @@ export interface BackendState {
   statusAt: number | null;
   configPath: string;
   configExists: boolean;
+  /** How long the last status read took, in ms; the proxy's own responsiveness. */
+  statusLatencyMs?: number | null;
 }
 
 export type LogStream = 'stdout' | 'stderr' | 'desktop';
@@ -191,6 +217,17 @@ export interface NotificationPrefs {
   appUpdateReady: boolean;
   /** The proxy core was switched to a newer TeamClaude from npm. */
   coreUpdated: boolean;
+  /** An account is forecast to run out of quota within the hour. */
+  quotaSoon: boolean;
+}
+
+/** A saved set of routing choices, applied in one click (Routing page, tray). */
+export interface RoutingProfile {
+  id: string;
+  name: string;
+  /** Switch threshold in percent, or null to leave it as it is. */
+  threshold: number | null;
+  distribution: DistributionMode | null;
 }
 
 export interface DesktopSettings {
@@ -207,6 +244,13 @@ export interface DesktopSettings {
   /** Fetch new TeamClaude releases from npm and run the proxy on them. */
   autoUpdateCore: boolean;
   notifications: NotificationPrefs;
+  profiles: RoutingProfile[];
+  /** The small always-on-top quota window. */
+  widget: boolean;
+  /** A system-wide shortcut that switches to the next account. */
+  hotkeyEnabled: boolean;
+  /** Electron accelerator, e.g. "CommandOrControl+Alt+Shift+N". */
+  hotkey: string;
 }
 
 /** Where the TeamClaude the app runs comes from. */
@@ -259,7 +303,7 @@ export interface IntegrationInfo {
   ides: IdeTarget[];
 }
 
-export type IdeId = 'claude' | 'vscode' | 'vscode-insiders' | 'cursor' | 'windsurf' | 'vscodium';
+export type IdeId = 'claude' | 'vscode' | 'vscode-insiders' | 'cursor' | 'windsurf' | 'vscodium' | 'zed' | 'jetbrains';
 
 export interface IdeTarget {
   id: IdeId;
@@ -269,6 +313,10 @@ export interface IdeTarget {
   status: 'connected' | 'other' | 'not-connected' | 'unreadable';
   current: string | null;
   settingsPath: string;
+  /** Set when the editor has no setting of its own and follows another target (JetBrains → Claude Code). */
+  via: IdeId | null;
+  /** The editor's command-line launcher on PATH, for "Open a folder with the proxy". */
+  launcher: string | null;
 }
 
 export interface SystemInfo {

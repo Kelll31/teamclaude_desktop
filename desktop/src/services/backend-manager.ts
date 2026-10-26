@@ -186,7 +186,9 @@ export class BackendManager extends EventEmitter {
     // Re-read the config while nothing is attached, so a port changed on disk
     // (or a config created by a first login) is picked up.
     const client = this.client && this.state.phase === 'running' ? this.client : this.connect();
+    const started = this.now();
     const result = await client.probe();
+    if (result.kind === 'teamclaude') this.state = { ...this.state, statusLatencyMs: this.now() - started };
     this.applyProbe(result);
     return this.state;
   }

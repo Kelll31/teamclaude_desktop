@@ -18,5 +18,27 @@ app holds no credentials.
 
 Self-updating copies check this repository's releases a minute after launch
 and every 6 hours, download in the background and install when the app quits
-(Settings → App updates). `latest.yml` and `latest-linux.yml` are the update
+(Settings → Updates). `latest.yml` and `latest-linux.yml` are the update
 feed.
+
+### What's new in 0.3
+
+- **Proxy core updates from npm.** The bundled TeamClaude is kept current with
+  upstream's npm releases: npm registry signature and sha512 checked, test-run,
+  switched, with rollback if the new core does not start (Settings → Updates).
+- **Connect an editor in one click**: Claude Code (all editors and the CLI),
+  VS Code, Insiders, Cursor, Windsurf, VSCodium, Zed; JetBrains IDEs follow
+  Claude Code. "Open a folder…" starts an editor with the proxy set.
+- **Usage** page: tokens, cache hit rate and requests per account, CSV export.
+- **Health** page: proxy response time, restarts, per-account errors and switches.
+- **Run-out forecast**: when an account will hit its limit before the reset,
+  on Accounts and Overview, with a notification an hour ahead.
+- **Routing profiles**: save threshold + distribution under a name, apply from
+  the Routing page or the tray.
+- **Quota widget**: a small always-on-top window with every account's quota.
+- **Global shortcut** to switch to the next account (off by default).
+- **Encrypted backup** of the TeamClaude config and quota state, to move to
+  another computer (Settings → Backup and transfer).
+- **9 languages**: English, Русский, Українська, Deutsch, Français, Español,
+  Português (Brasil), 简体中文, 日本語.
+- Bundles TeamClaude 1.1.26.

@@ -8,6 +8,11 @@ name: Desktop release (fork, unofficial)
 on:
   push:
     tags: ['desktop-v*']
+  # Run on a desktop-v* tag (`gh workflow run desktop-release.yml --ref
+  # desktop-vX.Y.Z`): desktop-upstream-sync.yml starts releases this way, since
+  # its tag push with GITHUB_TOKEN does not trigger this workflow. Dispatched on
+  # a branch, the tag/version check below fails the run.
+  workflow_dispatch:
 
 permissions:
   contents: read

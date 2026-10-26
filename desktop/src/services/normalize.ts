@@ -3,7 +3,7 @@
 // as `null` ("Unknown" in the UI), never as a made-up number.
 
 import type {
-  AccountView, BackgroundJobView, NamedQuotaWindow, QuotaWindow, RouteView, SessionView, StatusView,
+  AccountView, BackgroundJobView, ForecastView, TokenUsage, NamedQuotaWindow, QuotaWindow, RouteView, SessionView, StatusView,
 } from '../shared/types';
 
 type Obj = Record<string, unknown>;
@@ -50,6 +50,29 @@ const MODEL_WINDOWS: Array<{ key: string; label: string }> = [
   { key: 'unified7dFable', label: 'Fable' },
 ];
 
+function usageOf(raw: unknown): TokenUsage | null {
+  const u = obj(raw);
+  const input = num(u.totalInputTokens);
+  const output = num(u.totalOutputTokens);
+  if (input === null && output === null) return null;
+  return {
+    inputTokens: input ?? 0,
+    outputTokens: output ?? 0,
+    cacheReadTokens: num(u.totalCacheReadTokens) ?? 0,
+    cacheCreationTokens: num(u.totalCacheCreationTokens) ?? 0,
+  };
+}
+
+function forecastOf(raw: unknown): ForecastView[] {
+  return Object.entries(obj(raw)).flatMap(([bucket, value]) => {
+    const f = obj(value);
+    const threshold = num(f.threshold);
+    if (threshold === null) return [];
+    const family = bucket === 'unified7d' ? null : bucket.replace(/^unified7d/, '') || bucket;
+    return [{ bucket, family, ratePerHour: num(f.ratePerHour), threshold, reachesThresholdAt: num(f.reachesThresholdAt), resetAt: num(f.resetAt) }];
+  });
+}
+
 function normalizeAccount(raw: unknown, index: number, current: Set<string>): AccountView {
   const a = obj(raw);
   const quota = obj(a.quota);
@@ -87,6 +110,8 @@ function normalizeAccount(raw: unknown, index: number, current: Set<string>): Ac
     credentialRejectedUntil: str(a.credentialRejectedUntil),
     totalRequests: num(obj(a.usage).totalRequests),
     recentRequests: num(a.recentRequests),
+    usage: usageOf(a.usage),
+    forecast: forecastOf(quota.forecast),
   };
 }
 

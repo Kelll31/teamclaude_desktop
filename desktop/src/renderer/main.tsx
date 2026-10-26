@@ -7,7 +7,7 @@ const root = document.getElementById('root');
 if (root) {
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <App mini={window.location.hash === '#mini'} />
     </StrictMode>,
   );
 }

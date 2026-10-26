@@ -6,6 +6,7 @@ import { call } from '../api';
 import { useNow } from '../clock';
 import { JobPanel } from '../components/JobPanel';
 import { FiveHourBar, QuotaBar, RefreshQuotasButton, WeeklyBar } from '../components/QuotaBar';
+import { RunoutLines } from '../components/Runout';
 import { Sparkline } from '../components/Sparkline';
 import {
   ActionButton, Badge, Button, Card, ConfirmDialog, controlClass, EmptyState, Field, inputClass, PageHeader, Toggle, type Tone,
@@ -97,6 +98,7 @@ function AccountCard({ account, threshold, readOnly }: { account: AccountView; t
         <WeeklyBar account={account} now={now} threshold={threshold} />
         {account.modelWindows.map(w => <QuotaBar key={w.label} label={t('quota.modelWeekly', { model: w.label })} window={w} now={now} threshold={threshold} />)}
       </div>
+      <RunoutLines account={account} />
       <QuotaTrend account={account} />
 
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">

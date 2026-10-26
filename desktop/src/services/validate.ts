@@ -65,13 +65,44 @@ function object(required: string[], optional: string[], check: (v: Record<string
 const optionalName = (v: Record<string, unknown>): string | null =>
   v.name === undefined || isAccountName(v.name) ? null : 'invalid account name';
 
-const IDE_IDS: IdeId[] = ['claude', 'vscode', 'vscode-insiders', 'cursor', 'windsurf', 'vscodium'];
+const IDE_IDS: IdeId[] = ['claude', 'vscode', 'vscode-insiders', 'cursor', 'windsurf', 'vscodium', 'zed', 'jetbrains'];
+export const MAX_PROFILES = 20;
+const PROFILE_ID = /^[a-z0-9-]{1,40}$/;
+
+/** An Electron accelerator: modifiers and one key joined by "+", at least one modifier. */
+export function isAccelerator(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length > 60) return false;
+  const parts = value.split('+');
+  const mods = ['CommandOrControl', 'CmdOrCtrl', 'Control', 'Ctrl', 'Alt', 'Shift', 'Super', 'Meta', 'Command', 'Cmd', 'Option', 'AltGr'];
+  const key = parts.pop() ?? '';
+  return parts.length > 0 && parts.every(p => mods.includes(p)) && /^([A-Z0-9]|F([1-9]|1[0-9]|2[0-4])|Space|Tab|Home|End|Insert|Delete|PageUp|PageDown|Up|Down|Left|Right)$/.test(key);
+}
+
+function profileProblem(value: unknown): string | null {
+  if (!Array.isArray(value)) return 'profiles must be a list';
+  if (value.length > MAX_PROFILES) return `at most ${MAX_PROFILES} profiles`;
+  const ids = new Set<string>();
+  for (const p of value) {
+    if (!isPlainObject(p)) return 'a profile must be an object';
+    const keys = Object.keys(p).sort().join(',');
+    if (keys !== 'distribution,id,name,threshold') return 'a profile has id, name, threshold and distribution';
+    if (typeof p.id !== 'string' || !PROFILE_ID.test(p.id) || ids.has(p.id)) return 'invalid profile id';
+    ids.add(p.id);
+    if (typeof p.name !== 'string' || !p.name.trim() || p.name.length > 40) return 'a profile name is 1 to 40 characters';
+    if (p.threshold !== null && !intIn(p.threshold, 1, 100)) return 'a profile threshold is 1 to 100';
+    if (p.distribution !== null && !DISTRIBUTION_MODES.includes(p.distribution as DistributionMode)) return 'invalid distribution mode';
+  }
+  return null;
+}
+
+const passphrase = object(['passphrase'], [], v =>
+  typeof v.passphrase === 'string' && v.passphrase.length >= 8 && v.passphrase.length <= 1024 ? null : 'the passphrase must be 8 to 1024 characters');
 const THEMES: Theme[] = ['dark', 'light', 'system'];
 const NOTIFICATION_KEYS: Array<keyof NotificationPrefs> = [
-  'proxyCrashed', 'authExpired', 'allUnavailable', 'quotaExhausted', 'backendRecovered', 'updateAvailable', 'appUpdateReady', 'coreUpdated',
+  'proxyCrashed', 'authExpired', 'allUnavailable', 'quotaExhausted', 'backendRecovered', 'updateAvailable', 'appUpdateReady', 'coreUpdated', 'quotaSoon',
 ];
 const BOOLEAN_SETTINGS: Array<keyof DesktopSettings> = [
-  'launchAtLogin', 'startProxyOnLaunch', 'startMinimized', 'minimizeToTray', 'keepProxyOnWindowClose', 'restartOnCrash', 'autoUpdate', 'autoUpdateCore',
+  'launchAtLogin', 'startProxyOnLaunch', 'startMinimized', 'minimizeToTray', 'keepProxyOnWindowClose', 'restartOnCrash', 'autoUpdate', 'autoUpdateCore', 'widget', 'hotkeyEnabled',
 ];
 
 export const validateSettingsPatch: Validator = args => {
@@ -83,6 +114,11 @@ export const validateSettingsPatch: Validator = args => {
       if (!isLanguage(value)) return fail('invalid language');
     } else if ((BOOLEAN_SETTINGS as string[]).includes(key)) {
       if (typeof value !== 'boolean') return fail(`${key} must be true or false`);
+    } else if (key === 'hotkey') {
+      if (!isAccelerator(value)) return fail('invalid shortcut');
+    } else if (key === 'profiles') {
+      const problem = profileProblem(value);
+      if (problem) return fail(problem);
     } else if (key === 'notifications') {
       if (!isPlainObject(value)) return fail('notifications must be an object');
       for (const [n, flag] of Object.entries(value)) {
@@ -163,6 +199,12 @@ export const VALIDATORS: Record<MethodName, Validator> = {
 
   'ide.connect': object(['id'], [], v => (IDE_IDS.includes(v.id as IdeId) ? null : 'unknown editor')),
   'ide.disconnect': object(['id'], [], v => (IDE_IDS.includes(v.id as IdeId) ? null : 'unknown editor')),
+  'ide.openFolder': object(['id'], [], v => (IDE_IDS.includes(v.id as IdeId) ? null : 'unknown editor')),
+
+  'profiles.apply': object(['id'], [], v => (typeof v.id === 'string' && PROFILE_ID.test(v.id) ? null : 'invalid profile id')),
+  'usage.exportCsv': none,
+  'backup.export': passphrase,
+  'backup.import': passphrase,
 };
 
 export function isMethodName(value: unknown): value is MethodName {

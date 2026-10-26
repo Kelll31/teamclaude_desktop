@@ -1,5 +1,5 @@
 import {
-  Activity, Gauge, Info, ListTree, Plug, ScrollText, Settings as SettingsIcon, Split, Users,
+  Activity, ChartBarBig, Gauge, HeartPulse, Info, ListTree, Plug, ScrollText, Settings as SettingsIcon, Split, Users,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PageId } from '../../shared/ipc';
@@ -15,6 +15,8 @@ const ICONS: Record<PageId, ReactNode> = {
   accounts: <Users className="size-4" aria-hidden />,
   sessions: <ListTree className="size-4" aria-hidden />,
   activity: <Activity className="size-4" aria-hidden />,
+  usage: <ChartBarBig className="size-4" aria-hidden />,
+  health: <HeartPulse className="size-4" aria-hidden />,
   routing: <Split className="size-4" aria-hidden />,
   integrations: <Plug className="size-4" aria-hidden />,
   settings: <SettingsIcon className="size-4" aria-hidden />,
@@ -47,7 +49,7 @@ export function Sidebar() {
                 data-page={item.id}
                 onClick={() => setPage(item.id)}
                 aria-current={page === item.id ? 'page' : undefined}
-                title={t('nav.shortcut', { label, n: index + 1 })}
+                title={index < 9 ? t('nav.shortcut', { label, n: index + 1 }) : label}
                 className={cx(
                   'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors max-[900px]:justify-center',
                   page === item.id ? 'bg-accent/15 text-accent' : 'text-muted hover:bg-panel-2 hover:text-fg',

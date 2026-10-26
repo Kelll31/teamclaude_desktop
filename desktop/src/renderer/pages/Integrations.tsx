@@ -1,4 +1,4 @@
-import { CircleCheck, CircleX, Link2, Unlink2, SquareTerminal } from 'lucide-react';
+import { CircleCheck, CircleX, FolderOpen, Link2, Unlink2, SquareTerminal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { IdeTarget, IntegrationInfo } from '../../shared/types';
 import { call } from '../api';
@@ -56,10 +56,14 @@ function IdeCard({ info, onChanged }: { info: IntegrationInfo; onChanged: () => 
                   <Badge tone={status.tone}>{ide.status === 'unreadable' ? '!' : status.text}</Badge>
                 </div>
                 {ide.id === 'claude' && <p className="text-[11px] text-muted">{t('int.ideClaudeDesc')}</p>}
+                {ide.via && <p className="text-[11px] text-muted">{t('int.ideVia')}</p>}
                 {ide.status === 'unreadable' && <p className="text-[11px] text-bad">{status.text}</p>}
                 <p className="break-all font-mono text-[11px] text-muted">{ide.settingsPath}</p>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {ide.launcher && (
+                  <ActionButton icon={<FolderOpen className="size-3.5" aria-hidden />} title={t('int.ideOpenFolderHint')} onAction={() => run(() => call('ide.openFolder', { id: ide.id }))}>{t('int.ideOpenFolder')}</ActionButton>
+                )}
                 {ide.status !== 'connected' && ide.status !== 'unreadable' && (
                   <ActionButton variant="primary" icon={<Link2 className="size-3.5" aria-hidden />} onAction={change(ide, true)}>{t('int.ideConnect')}</ActionButton>
                 )}

@@ -50,8 +50,10 @@ stop a proxy it did not start.
 | Accounts | Accounts grouped by provider: type, token status (never the token), availability and why not, quota, next reset, the last 12 hours of 5-hour (or weekly) use as recorded while the app ran, priority, rotation toggle. Add, import, rename, remove (with confirmation), prefer, sign in again. |
 | Sessions | Session counts, and the individual sessions when the proxy runs with `proxy.sessionDetail`, filterable by account and client. |
 | Activity | Changes the app observed between status readings (switches, accounts becoming unavailable) and routing lines from the proxy's log, without request content. |
-| Routing | Distribution mode (off, even, adaptive, or by load — offered when the running TeamClaude has that mode), the requests each account served in the last ten minutes, switch threshold, priorities, model routes, background probe and warm-up. Settings that can spend extra requests are off by default and carry a warning. |
-| Integrations | Detects `claude` and `codex` on PATH, checks the proxy, gives copyable environment lines for bash/zsh, PowerShell and cmd, and can open a terminal with `ANTHROPIC_BASE_URL` set. **Connect an editor** points Claude Code (`~/.claude/settings.json`, read by the CLI and every editor extension) or a VS Code-family editor (VS Code, Insiders, Cursor, Windsurf, VSCodium) at the proxy in one click; see below. |
+| Usage | Tokens (input, cache read, cache write, output) and requests per account as the proxy counted them since it started, cache hit rate, share of the total, **Export CSV**. No cost is shown: subscription accounts are not billed per token. |
+| Health | Proxy state, uptime, how long the local proxy takes to answer its status (now, average, p95, chart), automatic restarts, and per account its state, the reason it rests, errors and switches in the last 24 hours. |
+| Routing | **Routing profiles** (save the current threshold and distribution mode under a name, apply in one click here or from the tray), distribution mode (off, even, adaptive, or by load — offered when the running TeamClaude has that mode), the requests each account served in the last ten minutes, switch threshold, priorities, model routes, background probe and warm-up. Settings that can spend extra requests are off by default and carry a warning. |
+| Integrations | Detects `claude` and `codex` on PATH, checks the proxy, gives copyable environment lines for bash/zsh, PowerShell and cmd, and can open a terminal with `ANTHROPIC_BASE_URL` set. **Connect an editor** points Claude Code (`~/.claude/settings.json`, read by the CLI and every editor extension) or a VS Code-family editor (VS Code, Insiders, Cursor, Windsurf, VSCodium) or Zed at the proxy in one click; JetBrains IDEs follow Claude Code. **Open a folder…** starts the editor on a folder with the proxy set. See below. |
 | Settings | Theme (dark, light, system), language (English, Русский, Українська, Deutsch, Français, Español, Português (Brasil), 简体中文, 日本語), tray and startup behaviour, notifications, the config directory, diagnostics. |
 | Logs | The managed proxy's stdout/stderr and the app's own notes, sanitized; filter, search, auto-scroll, clear, the backend crash log, and **Export diagnostics**. |
 | About | Desktop, bundled backend and running backend versions, app updates, proxy core updates, links. |
@@ -73,8 +75,29 @@ quotas** on Overview and Accounts reads every account from the usage endpoint
 once (the TUI's `p`); it spends no quota and runs only when pressed. To keep
 idle accounts fresh, turn on the background probe under Routing.
 
-Keyboard: **Ctrl+1** … **Ctrl+9** open the pages in sidebar order; **F5** or
-**Ctrl+R** reads the proxy status again.
+**Run-out forecast.** Under an account's quota bars, and as a banner on
+Overview for the account that comes first, the app says when the account
+reaches its limit at the current pace, but only when that comes before the
+window resets. Weekly windows use the server's own burn-rate forecast (the
+level is the switch threshold); the 5-hour window extrapolates the last hour
+of recorded readings to 100%. With a notification on (**Quota runs out
+within the hour**), it is announced once per window.
+
+Keyboard: **Ctrl+1** … **Ctrl+9** open the first nine pages in sidebar order;
+**F5** or **Ctrl+R** reads the proxy status again. A **global shortcut**
+(Settings, off by default, `Ctrl+Alt+Shift+N` unless changed) switches the
+proxy to the next account that can serve, from any application.
+
+**Quota widget** (Settings or tray, off by default): a small always-on-top
+window with each account's 5-hour and weekly use and the soonest run-out.
+
+**Backup and transfer** (Settings): saves the TeamClaude config (accounts with
+their credentials, proxy and routing settings) and `teamclaude.state.json`
+into one `.tcbackup` file, encrypted with AES-256-GCM under a key derived from
+your passphrase with scrypt. Restoring needs the passphrase, refuses a damaged
+file, keeps the replaced files next to the config as `.before-restore-<time>`
+and restarts a proxy the app started (or asks an external one to reload). The
+passphrase is not stored.
 
 ## Background mode and tray
 
@@ -97,7 +120,8 @@ Keyboard: **Ctrl+1** … **Ctrl+9** open the pages in sidebar order; **F5** or
 
 Local system notifications for: proxy crashed, account authentication
 expired, all eligible accounts unavailable, quota exhausted, backend
-recovered, update available. Each type can be turned off in Settings. They
+recovered, update available, app update ready, proxy core updated, quota runs
+out within the hour. Each type can be turned off in Settings. They
 are derived from the status the app already polls; no extra request is made
 for them, and they never contain a credential.
 
@@ -233,6 +257,20 @@ The `Desktop release (fork, unofficial)` workflow checks that the tag matches
 packages, and publishes one release with the installers, the feed files and
 SHA-256 sums. Locally, `npm run release:win` / `npm run release:linux` build
 the same packages without publishing.
+
+### Upstream sync
+
+The `Desktop upstream sync (fork, unofficial)` workflow
+(`.github/workflows/desktop-upstream-sync.yml`) runs daily at 04:17 UTC and
+on demand. When `KarpelesLab/teamclaude` master has commits the
+`fork/desktop-releases` branch lacks, it merges them with a merge commit, runs
+the backend tests and the desktop lint, typecheck and tests, and pushes the
+merge. If the merge changed the core version in the root `package.json`, it
+also bumps the patch version of `desktop/package.json`, commits
+`chore(desktop): <version>, bundles TeamClaude <core version>`, pushes the
+tag `desktop-v<version>` and starts the release workflow on that tag (a tag
+pushed by a workflow does not trigger it by itself). A merge conflict or a
+failing check fails the run and pushes nothing; merge by hand then.
 
 ## Manual test checklist
 

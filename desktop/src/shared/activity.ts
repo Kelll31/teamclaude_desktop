@@ -35,6 +35,8 @@ export interface Sample {
   at: number;
   activeSessions: number;
   requests: number | null;
+  /** Status read time in ms; absent in samples from before it was recorded. */
+  latencyMs?: number | null;
 }
 
 /** Utilization (0–1) of each account's windows at one moment; null = not reported. */
@@ -107,7 +109,12 @@ export function sampleOf(state: BackendState, at: number): Sample | null {
   const status = state.status;
   if (!status) return null;
   const counts = status.accounts.map(a => a.totalRequests).filter((n): n is number => n !== null);
-  return { at, activeSessions: status.sessions.active, requests: counts.length ? counts.reduce((x, y) => x + y, 0) : null };
+  return {
+    at,
+    activeSessions: status.sessions.active,
+    requests: counts.length ? counts.reduce((x, y) => x + y, 0) : null,
+    latencyMs: state.statusLatencyMs ?? null,
+  };
 }
 
 export function quotaPointOf(state: BackendState, at: number): QuotaPoint | null {

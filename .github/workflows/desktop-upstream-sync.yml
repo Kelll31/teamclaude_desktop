@@ -1,0 +1,155 @@
+name: Desktop upstream sync (fork, unofficial)
+
+# Keeps the Kelll31/teamclaude fork's desktop branch current with upstream
+# KarpelesLab/teamclaude. Daily (and on demand) it merges upstream/master into
+# fork/desktop-releases, runs the backend and desktop checks, and pushes the
+# merge. When the merge changes the core version in the root package.json, it
+# also bumps desktop/package.json's patch version, tags desktop-vX.Y.Z and
+# starts the "Desktop release (fork, unofficial)" workflow, so installed apps
+# get a build that bundles the new core. A conflict or a failing check stops
+# the run before anything is pushed. Nothing here goes to the upstream project.
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# One sync at a time; a queued run waits rather than cancelling a push midway.
+concurrency:
+  group: desktop-upstream-sync
+  cancel-in-progress: false
+
+env:
+  BRANCH: fork/desktop-releases
+  UPSTREAM_URL: https://github.com/KarpelesLab/teamclaude.git
+
+jobs:
+  sync:
+    name: merge upstream, check, push
+    if: github.repository == 'Kelll31/teamclaude'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Fetch upstream
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add upstream "$UPSTREAM_URL"
+          git fetch --no-tags upstream master
+
+      - name: Anything to merge?
+        id: state
+        run: |
+          if git merge-base --is-ancestor upstream/master HEAD; then
+            echo "upstream/master is already merged into $BRANCH; nothing to do."
+            echo 'behind=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'behind=true' >> "$GITHUB_OUTPUT"
+          fi
+          echo "core_before=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Merge upstream/master
+        if: steps.state.outputs.behind == 'true'
+        run: |
+          if ! git merge --no-ff --no-edit \
+              -m "Merge upstream/master into $BRANCH" upstream/master; then
+            git merge --abort || true
+            echo "::error::Merging upstream/master into $BRANCH conflicts. Nothing was pushed; merge it by hand and push the branch."
+            exit 1
+          fi
+
+      # The root package has no dependencies and gitignores its lockfile, so
+      # there is normally nothing to install: `node --test` needs no packages.
+      - name: Install backend dependencies
+        if: steps.state.outputs.behind == 'true'
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --ignore-scripts
+          else
+            echo 'No root package-lock.json; skipping npm ci.'
+          fi
+
+      # Same command and Node version (24) as the backend job in ci.yml.
+      - name: Backend tests
+        if: steps.state.outputs.behind == 'true'
+        timeout-minutes: 30
+        run: npm test
+
+      # `--ignore-scripts` and the order of checks as in desktop.yml.
+      - name: Desktop checks
+        if: steps.state.outputs.behind == 'true'
+        working-directory: desktop
+        run: |
+          npm ci --ignore-scripts
+          npm run typecheck
+          npm run lint
+          npm test
+
+      - name: Bump the desktop version when the core version changed
+        id: bump
+        if: steps.state.outputs.behind == 'true'
+        env:
+          CORE_BEFORE: ${{ steps.state.outputs.core_before }}
+        run: |
+          core=$(node -p "require('./package.json').version")
+          if [ "$core" = "$CORE_BEFORE" ]; then
+            echo "Core version unchanged ($core); pushing the merge only."
+            exit 0
+          fi
+          (cd desktop && npm version patch --no-git-tag-version)
+          app=$(node -p "require('./desktop/package.json').version")
+          git add desktop/package.json desktop/package-lock.json
+          git commit -m "chore(desktop): $app, bundles TeamClaude $core"
+          git tag "desktop-v$app"
+          echo "Core $CORE_BEFORE -> $core; desktop $app"
+          echo "tag=desktop-v$app" >> "$GITHUB_OUTPUT"
+
+      # One atomic push: the branch and the tag land together or not at all.
+      - name: Push
+        if: steps.state.outputs.behind == 'true'
+        env:
+          TAG: ${{ steps.bump.outputs.tag }}
+        run: |
+          if [ -n "$TAG" ]; then
+            git push --atomic origin "HEAD:refs/heads/$BRANCH" "refs/tags/$TAG"
+          else
+            git push origin "HEAD:refs/heads/$BRANCH"
+          fi
+
+  # A tag pushed with GITHUB_TOKEN does not trigger other workflows, so the
+  # release is started explicitly. `gh workflow run --ref <tag>` (a
+  # workflow_dispatch, which GITHUB_TOKEN may trigger) is used rather than
+  # `uses:` / workflow_call: dispatched on the tag, the release workflow sees
+  # the same GITHUB_REF_NAME and checks out the same commit as on a tag push,
+  # so its tag/version check, checkout and `gh release create` work unchanged.
+  # Called via workflow_call it would inherit this run's ref (the branch, at
+  # the pre-merge commit) and would need a tag input threaded through every
+  # step. The cost is `actions: write`, granted to this job only.
+  release:
+    name: start the desktop release
+    needs: sync
+    if: needs.sync.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch desktop-release.yml on the new tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.sync.outputs.tag }}
+        run: |
+          gh workflow run desktop-release.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG"
+          echo "Started the desktop release for $TAG."

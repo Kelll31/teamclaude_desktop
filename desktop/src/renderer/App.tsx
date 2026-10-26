@@ -8,11 +8,14 @@ import { t } from './i18n';
 import { About } from './pages/About';
 import { Accounts } from './pages/Accounts';
 import { Activity } from './pages/Activity';
+import { Health } from './pages/Health';
 import { Integrations } from './pages/Integrations';
 import { Logs } from './pages/Logs';
+import { Mini } from './pages/Mini';
 import { Overview } from './pages/Overview';
 import { Routing } from './pages/Routing';
 import { Sessions } from './pages/Sessions';
+import { Usage } from './pages/Usage';
 import { Settings } from './pages/Settings';
 import { shortcutFor } from './shortcuts';
 import { StoreProvider, useStore } from './store';
@@ -22,6 +25,8 @@ const PAGES: Record<PageId, () => ReactNode> = {
   accounts: Accounts,
   sessions: Sessions,
   activity: Activity,
+  usage: Usage,
+  health: Health,
   routing: Routing,
   integrations: Integrations,
   settings: Settings,
@@ -94,10 +99,10 @@ function Shell() {
   );
 }
 
-export function App() {
+export function App({ mini = false }: { mini?: boolean }) {
   return (
     <StoreProvider>
-      <Shell />
+      {mini ? <Mini /> : <Shell />}
     </StoreProvider>
   );
 }

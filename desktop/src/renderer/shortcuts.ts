@@ -1,4 +1,5 @@
-// Keyboard shortcuts. Ctrl+1…9 opens the page at that place in the sidebar;
+// Keyboard shortcuts. Ctrl+1…9 opens the page at that place in the sidebar
+// (the first nine);
 // F5 or Ctrl+R reads the proxy status again. The window has no menu, so
 // neither key reloads the page.
 
@@ -6,7 +7,7 @@ import type { PageId } from '../shared/ipc';
 
 /** Sidebar order, which is also the Ctrl+number order. */
 export const PAGE_ORDER: readonly PageId[] = [
-  'overview', 'accounts', 'sessions', 'activity', 'routing', 'integrations', 'settings', 'logs', 'about',
+  'overview', 'accounts', 'sessions', 'activity', 'usage', 'health', 'routing', 'integrations', 'settings', 'logs', 'about',
 ];
 
 export type Shortcut = { type: 'page'; page: PageId } | { type: 'refresh' };

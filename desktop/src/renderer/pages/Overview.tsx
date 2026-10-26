@@ -5,7 +5,9 @@ import { useNow } from '../clock';
 import { phaseTone } from '../components/BackendBanner';
 import { FiveHourBar, RefreshQuotasButton, WeeklyBar } from '../components/QuotaBar';
 import { Sparkline } from '../components/Sparkline';
-import { ActionButton, Badge, Button, Card, CopyButton, Dot, PageHeader, Stat } from '../components/ui';
+import { soonestRunout } from '../../shared/forecast';
+import { runoutText } from '../components/Runout';
+import { ActionButton, Badge, Banner, Button, Card, CopyButton, Dot, PageHeader, Stat } from '../components/ui';
 import { ago, duration, phaseText, unavailableText, unknown, until } from '../format';
 import { t } from '../i18n';
 import { useStore } from '../store';
@@ -82,7 +84,7 @@ function AccountQuotaRow({ account, now, threshold }: { account: AccountView; no
 }
 
 export function Overview() {
-  const { backend, samples, setPage } = useStore();
+  const { backend, samples, quota, setPage } = useStore();
   const now = useNow();
   if (!backend) return null;
   const status = backend.status;
@@ -101,6 +103,15 @@ export function Overview() {
         subtitle={backend.statusAt ? t('overview.updated', { when: ago(backend.statusAt, now) }) : t('overview.noData')}
       />
       <ProxyCard state={backend} />
+      {(() => {
+        const soonest = status ? soonestRunout(status.accounts, quota, now) : null;
+        if (!soonest) return null;
+        return (
+          <Banner tone="warn" title={t('forecast.bannerTitle', { name: soonest.account.name })} actions={<Button variant="ghost" onClick={() => setPage('accounts')}>{t('forecast.bannerAction')}</Button>}>
+            {runoutText(soonest.runout, now)}
+          </Banner>
+        );
+      })()}
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
         <Stat label={t('overview.accounts')} value={status ? accounts.length : '—'} sub={status ? t('overview.disabledCount', { n: accounts.filter(a => a.disabled).length }) : undefined} />

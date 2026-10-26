@@ -71,6 +71,12 @@ export interface Methods {
 
   'ide.connect': { args: { id: IdeId }; result: ActionResult };
   'ide.disconnect': { args: { id: IdeId }; result: ActionResult };
+  'ide.openFolder': { args: { id: IdeId }; result: ActionResult };
+
+  'profiles.apply': { args: { id: string }; result: ActionResult };
+  'usage.exportCsv': { args: void; result: ActionResult };
+  'backup.export': { args: { passphrase: string }; result: ActionResult };
+  'backup.import': { args: { passphrase: string }; result: ActionResult };
 }
 
 /** Links the main process opens, by a fixed list. */
@@ -92,7 +98,7 @@ export type DesktopEvent =
   | { type: 'navigate'; page: PageId };
 
 export type PageId =
-  | 'overview' | 'accounts' | 'sessions' | 'activity' | 'routing'
+  | 'overview' | 'accounts' | 'sessions' | 'activity' | 'usage' | 'health' | 'routing'
   | 'integrations' | 'settings' | 'logs' | 'about';
 
 /** The API the preload puts on `window.teamclaude`. */

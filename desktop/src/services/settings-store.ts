@@ -24,6 +24,10 @@ export const DEFAULT_SETTINGS: DesktopSettings = {
   // Same for the proxy core: TeamClaude releases come from npm, the only
   // place upstream publishes them.
   autoUpdateCore: true,
+  profiles: [],
+  widget: false,
+  hotkeyEnabled: false,
+  hotkey: 'CommandOrControl+Alt+Shift+N',
   notifications: {
     proxyCrashed: true,
     authExpired: true,
@@ -33,6 +37,7 @@ export const DEFAULT_SETTINGS: DesktopSettings = {
     updateAvailable: true,
     appUpdateReady: true,
     coreUpdated: true,
+    quotaSoon: true,
   },
 };
 

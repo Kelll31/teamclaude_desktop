@@ -1,6 +1,6 @@
-import { TriangleAlert } from 'lucide-react';
+import { Play, Save, Trash2, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { DistributionMode } from '../../shared/types';
+import type { DistributionMode, RoutingProfile } from '../../shared/types';
 import { call } from '../api';
 import { JobPanel } from '../components/JobPanel';
 import { ActionButton, Badge, Banner, Button, Card, controlClass, EmptyState, Field, inputClass, PageHeader, Rich } from '../components/ui';
@@ -58,6 +58,62 @@ function DistributionCard() {
         </Button>
       </div>
       <p className="mt-2 text-[11px] text-muted"><Rich text={t('dist.note')} /></p>
+    </Card>
+  );
+}
+
+/** The mode name `distribute` takes for what status reports ("even" is `on`). */
+function modeArg(mode: string | null): DistributionMode | null {
+  if (mode === 'even' || mode === 'on') return 'on';
+  return mode === 'off' || mode === 'adaptive' || mode === 'load' ? mode : null;
+}
+
+function ProfilesCard() {
+  const { backend, settings, run } = useStore();
+  const [name, setName] = useState('');
+  const status = backend?.status;
+  const profiles = settings?.profiles ?? [];
+  const threshold = status?.switchThreshold;
+  const mode = modeArg(status?.sessions.distribution ?? null);
+  const save = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const profile: RoutingProfile = {
+      id: `p-${Date.now().toString(36)}`,
+      name: trimmed.slice(0, 40),
+      threshold: typeof threshold === 'number' ? Math.min(100, Math.max(1, Math.round(threshold * 100))) : null,
+      distribution: mode,
+    };
+    await call('settings.update', { profiles: [...profiles.filter(p => p.name !== profile.name), profile].slice(-20) });
+    setName('');
+  };
+  const remove = (id: string) => call('settings.update', { profiles: profiles.filter(p => p.id !== id) });
+  return (
+    <Card title={t('profiles.title')}>
+      <p className="mb-3 text-[12px] text-muted">{t('profiles.body')}</p>
+      {profiles.length > 0 && (
+        <ul className="mb-3 divide-y divide-border">
+          {profiles.map(p => (
+            <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+              <div className="min-w-0">
+                <div className="text-[13px] text-fg">{p.name}</div>
+                <div className="text-[11px] text-muted">
+                  {t('profiles.summary', { threshold: p.threshold === null ? '—' : `${p.threshold}%`, mode: p.distribution ?? '—' })}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton variant="primary" icon={<Play className="size-3.5" aria-hidden />} onAction={() => run(() => call('profiles.apply', { id: p.id }))}>{t('profiles.apply')}</ActionButton>
+                <ActionButton variant="ghost" icon={<Trash2 className="size-3.5" aria-hidden />} onAction={() => remove(p.id)}>{t('profiles.delete')}</ActionButton>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="w-56"><Field label={t('profiles.name')}><input className={inputClass} maxLength={40} value={name} onChange={e => setName(e.target.value)} placeholder={t('profiles.placeholder')} /></Field></div>
+        <ActionButton icon={<Save className="size-3.5" aria-hidden />} disabled={!name.trim() || profiles.length >= 20} onAction={save}>{t('profiles.saveCurrent')}</ActionButton>
+      </div>
+      <p className="mt-2 text-[11px] text-muted">{t('profiles.note')}</p>
     </Card>
   );
 }
@@ -220,6 +276,7 @@ export function Routing() {
         <ThresholdCard />
         <DistributionCard />
       </div>
+      <ProfilesCard />
       <PreferredCard />
       <PrioritiesCard />
       <RoutesCard />

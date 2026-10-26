@@ -2,8 +2,11 @@
 // settings as JSONC (comments, trailing commas), so their file is edited in
 // place: only the text of one top-level key is replaced or inserted, and the
 // user's comments and layout survive. Claude Code's own ~/.claude/settings.json
-// is plain JSON and is rewritten whole. Before the first change a copy of the
-// file is kept next to it; Disconnect removes only ANTHROPIC_BASE_URL.
+// is plain JSON and is rewritten whole. Zed runs Claude Code as an agent
+// server and takes its environment from `agent_servers.claude.env`. JetBrains
+// IDEs run the Claude Code CLI, so they follow ~/.claude/settings.json. Before
+// the first change a copy of the file is kept next to it; Disconnect removes
+// only ANTHROPIC_BASE_URL.
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -39,12 +42,14 @@ export const nodeIdeFiles: IdeFiles = {
   copy: copyFileSync,
 };
 
-const EDITORS: Array<{ id: Exclude<IdeId, 'claude'>; name: string; folder: string }> = [
-  { id: 'vscode', name: 'VS Code', folder: 'Code' },
-  { id: 'vscode-insiders', name: 'VS Code Insiders', folder: 'Code - Insiders' },
-  { id: 'cursor', name: 'Cursor', folder: 'Cursor' },
-  { id: 'windsurf', name: 'Windsurf', folder: 'Windsurf' },
-  { id: 'vscodium', name: 'VSCodium', folder: 'VSCodium' },
+export const ZED_KEY = 'agent_servers';
+
+const EDITORS: Array<{ id: Exclude<IdeId, 'claude' | 'zed' | 'jetbrains'>; name: string; folder: string; launcher: string }> = [
+  { id: 'vscode', name: 'VS Code', folder: 'Code', launcher: 'code' },
+  { id: 'vscode-insiders', name: 'VS Code Insiders', folder: 'Code - Insiders', launcher: 'code-insiders' },
+  { id: 'cursor', name: 'Cursor', folder: 'Cursor', launcher: 'cursor' },
+  { id: 'windsurf', name: 'Windsurf', folder: 'Windsurf', launcher: 'windsurf' },
+  { id: 'vscodium', name: 'VSCodium', folder: 'VSCodium', launcher: 'codium' },
 ];
 
 export interface IdeEnvironment {
@@ -59,6 +64,11 @@ function configBase(e: IdeEnvironment): string {
   if (e.platform === 'win32') return e.env.APPDATA || join(e.home, 'AppData', 'Roaming');
   if (e.platform === 'darwin') return join(e.home, 'Library', 'Application Support');
   return e.env.XDG_CONFIG_HOME || join(e.home, '.config');
+}
+
+function zedDir(e: IdeEnvironment): string {
+  if (e.platform === 'win32') return join(e.env.APPDATA || join(e.home, 'AppData', 'Roaming'), 'Zed');
+  return join(e.env.XDG_CONFIG_HOME || join(e.home, '.config'), 'zed');
 }
 
 export function claudeSettingsPath(e: IdeEnvironment): string {
@@ -219,15 +229,19 @@ function envEntries(value: unknown): Array<{ name: string; value: string }> {
     : [];
 }
 
+const record = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' && !Array.isArray(value) ? { ...(value as Record<string, unknown>) } : {};
+
 function currentUrl(id: IdeId, settings: Record<string, unknown>): string | null {
-  if (id !== 'claude') return envEntries(settings[VSCODE_KEY]).find(e => e.name === ENV_NAME)?.value ?? null;
-  const env = settings.env;
-  const v = env && typeof env === 'object' ? (env as Record<string, unknown>)[ENV_NAME] : null;
+  let v: unknown;
+  if (id === 'claude') v = record(settings.env)[ENV_NAME];
+  else if (id === 'zed') v = record(record(record(settings[ZED_KEY]).claude).env)[ENV_NAME];
+  else return envEntries(settings[VSCODE_KEY]).find(e => e.name === ENV_NAME)?.value ?? null;
   return typeof v === 'string' ? v : null;
 }
 
-function describeTarget(id: IdeId, name: string, path: string, installed: boolean, url: string, files: IdeFiles): IdeTarget {
-  const base = { id, name, installed, settingsPath: path };
+function describeTarget(id: IdeId, name: string, path: string, installed: boolean, url: string, files: IdeFiles, launcher: string | null = null): IdeTarget {
+  const base = { id, name, installed, settingsPath: path, via: null, launcher };
   const text = files.read(path);
   if (text === null) return { ...base, status: 'not-connected', current: null };
   try {
@@ -243,16 +257,30 @@ export function proxyUrl(port: number): string {
   return `http://localhost:${port}`;
 }
 
-export function listIdeTargets(port: number, opts: { env?: IdeEnvironment; files?: IdeFiles; claudeFound?: boolean } = {}): IdeTarget[] {
+export interface ListOptions {
+  env?: IdeEnvironment;
+  files?: IdeFiles;
+  claudeFound?: boolean;
+  /** Finds a command on PATH (integrations.findExecutable); none are looked up when omitted. */
+  find?: (name: string) => string | null;
+}
+
+export function listIdeTargets(port: number, opts: ListOptions = {}): IdeTarget[] {
   const e = opts.env ?? currentEnvironment();
   const files = opts.files ?? nodeIdeFiles;
+  const find = opts.find ?? (() => null);
   const url = proxyUrl(port);
   const claudePath = claudeSettingsPath(e);
-  const targets = [describeTarget('claude', 'Claude Code', claudePath, !!opts.claudeFound || files.exists(dirname(claudePath)), url, files)];
+  const claude = describeTarget('claude', 'Claude Code', claudePath, !!opts.claudeFound || files.exists(dirname(claudePath)), url, files);
+  const targets = [claude];
   const base = configBase(e);
   for (const ed of EDITORS) {
-    targets.push(describeTarget(ed.id, ed.name, join(base, ed.folder, 'User', 'settings.json'), files.exists(join(base, ed.folder)), url, files));
+    targets.push(describeTarget(ed.id, ed.name, join(base, ed.folder, 'User', 'settings.json'), files.exists(join(base, ed.folder)), url, files, find(ed.launcher)));
   }
+  const zed = zedDir(e);
+  targets.push(describeTarget('zed', 'Zed', join(zed, 'settings.json'), files.exists(zed), url, files, find('zed')));
+  // JetBrains keeps no setting of its own here: its Claude Code plugin runs the CLI.
+  targets.push({ ...claude, id: 'jetbrains', name: 'JetBrains IDEs', installed: files.exists(join(base, 'JetBrains')), via: 'claude', launcher: null });
   return targets;
 }
 
@@ -268,6 +296,18 @@ export function editSettings(id: IdeId, text: string | null, url: string | null)
     if (!Object.keys(env).length) delete next.env;
     return `${JSON.stringify(next, null, 2)}\n`;
   }
+  if (id === 'zed') {
+    const servers = record(settings[ZED_KEY]);
+    const claude = record(servers.claude);
+    const env = record(claude.env);
+    if (url) env[ENV_NAME] = url;
+    else delete env[ENV_NAME];
+    if (Object.keys(env).length) claude.env = env;
+    else delete claude.env;
+    if (Object.keys(claude).length) servers.claude = claude;
+    else delete servers.claude;
+    return Object.keys(servers).length ? setTopLevel(source, ZED_KEY, servers) : removeTopLevel(source, ZED_KEY);
+  }
   const others = envEntries(settings[VSCODE_KEY]).filter(e => e.name !== ENV_NAME);
   if (url) return setTopLevel(source, VSCODE_KEY, [...others, { name: ENV_NAME, value: url }]);
   return others.length ? setTopLevel(source, VSCODE_KEY, others) : removeTopLevel(source, VSCODE_KEY);
@@ -276,7 +316,7 @@ export function editSettings(id: IdeId, text: string | null, url: string | null)
 /** Connect (url) or disconnect (null) one target. Throws with a readable message. */
 export function applyIde(target: IdeTarget, url: string | null, files: IdeFiles = nodeIdeFiles): void {
   const text = files.read(target.settingsPath);
-  const next = editSettings(target.id, text, url);
+  const next = editSettings(target.via ?? target.id, text, url);
   // The result must still parse, or nothing is written.
   parseJsonc(next);
   if (text === next) return;
