@@ -4,7 +4,7 @@
 
 import { isLanguage } from '../shared/i18n';
 import type { MethodName } from '../shared/ipc';
-import type { DesktopSettings, DistributionMode, NotificationPrefs, Theme } from '../shared/types';
+import type { DesktopSettings, DistributionMode, IdeId, NotificationPrefs, Theme } from '../shared/types';
 
 export type Validation<T = unknown> = { ok: true; value: T } | { ok: false; error: string };
 type Validator = (args: unknown) => Validation;
@@ -65,12 +65,13 @@ function object(required: string[], optional: string[], check: (v: Record<string
 const optionalName = (v: Record<string, unknown>): string | null =>
   v.name === undefined || isAccountName(v.name) ? null : 'invalid account name';
 
+const IDE_IDS: IdeId[] = ['claude', 'vscode', 'vscode-insiders', 'cursor', 'windsurf', 'vscodium'];
 const THEMES: Theme[] = ['dark', 'light', 'system'];
 const NOTIFICATION_KEYS: Array<keyof NotificationPrefs> = [
-  'proxyCrashed', 'authExpired', 'allUnavailable', 'quotaExhausted', 'backendRecovered', 'updateAvailable', 'appUpdateReady',
+  'proxyCrashed', 'authExpired', 'allUnavailable', 'quotaExhausted', 'backendRecovered', 'updateAvailable', 'appUpdateReady', 'coreUpdated',
 ];
 const BOOLEAN_SETTINGS: Array<keyof DesktopSettings> = [
-  'launchAtLogin', 'startProxyOnLaunch', 'startMinimized', 'minimizeToTray', 'keepProxyOnWindowClose', 'restartOnCrash', 'autoUpdate',
+  'launchAtLogin', 'startProxyOnLaunch', 'startMinimized', 'minimizeToTray', 'keepProxyOnWindowClose', 'restartOnCrash', 'autoUpdate', 'autoUpdateCore',
 ];
 
 export const validateSettingsPatch: Validator = args => {
@@ -154,6 +155,14 @@ export const VALIDATORS: Record<MethodName, Validator> = {
   'appUpdate.check': none,
   'appUpdate.download': none,
   'appUpdate.install': none,
+
+  'coreUpdate.getState': none,
+  'coreUpdate.check': none,
+  'coreUpdate.install': none,
+  'coreUpdate.revert': none,
+
+  'ide.connect': object(['id'], [], v => (IDE_IDS.includes(v.id as IdeId) ? null : 'unknown editor')),
+  'ide.disconnect': object(['id'], [], v => (IDE_IDS.includes(v.id as IdeId) ? null : 'unknown editor')),
 };
 
 export function isMethodName(value: unknown): value is MethodName {

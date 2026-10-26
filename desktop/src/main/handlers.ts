@@ -8,10 +8,12 @@ import { dirname } from 'node:path';
 import { clipboard, dialog, shell, type BrowserWindow } from 'electron';
 import type { ActivityLog } from '../shared/activity';
 import type { Translate } from '../shared/i18n';
-import type { ActionResult, DesktopSettings, SystemInfo } from '../shared/types';
+import type { ActionResult, DesktopSettings, IdeId, SystemInfo } from '../shared/types';
 import type { BackendManager } from '../services/backend-manager';
 import { crashLogPath } from '../services/backend-config';
 import type { ControlResult } from '../services/backend-client';
+import type { CoreUpdater } from '../services/core-updater';
+import { applyIde, listIdeTargets, proxyUrl } from '../services/ide-connect';
 import { RELEASES_URL, type AppUpdater } from '../services/app-updater';
 import { buildDiagnosticReport } from '../services/diagnostics';
 import { readFileTail } from '../services/file-tail';
@@ -42,6 +44,7 @@ export interface HandlerContext {
   logs: LogBuffer;
   history: ActivityLog;
   appUpdater: AppUpdater;
+  coreUpdater: CoreUpdater;
   settings: SettingsStore;
   applySettings: (next: DesktopSettings, previous: DesktopSettings) => void;
   window: () => BrowserWindow | null;
@@ -49,6 +52,21 @@ export interface HandlerContext {
   desktopVersion: string;
   bundledBackendVersion: string | null;
   userDataDir: string;
+}
+
+function changeIde(ctx: HandlerContext, id: IdeId, connect: boolean): ActionResult {
+  const t = ctx.t();
+  const { port } = ctx.manager.getState();
+  const target = listIdeTargets(port).find(target => target.id === id);
+  if (!target || (!target.installed && connect)) return { ok: false, message: t('h.ideUnknown') };
+  const name = id === 'claude' ? t('int.ideClaudeName') : target.name;
+  try {
+    applyIde(target, connect ? proxyUrl(port) : null);
+  } catch (err) {
+    return { ok: false, message: t('h.ideFailed', { name, error: describeError(err) }) };
+  }
+  ctx.logs.note(`${connect ? 'Connected' : 'Disconnected'} ${target.name} (${target.settingsPath}).`);
+  return { ok: true, message: t(connect ? 'h.ideConnected' : 'h.ideDisconnected', { name }) };
 }
 
 export function systemInfo(ctx: HandlerContext): SystemInfo {
@@ -146,13 +164,15 @@ export function createHandlers(ctx: HandlerContext): Handlers {
     'system.info': () => systemInfo(ctx),
     'system.integrations': () => {
       const state = manager.getState();
+      const claude = toolInfo('claude');
       return {
         endpoint: state.endpoint,
         proxyReady: state.phase === 'running',
-        claude: toolInfo('claude'),
+        claude,
         codex: toolInfo('codex'),
         env: envSnippets(state.port),
         vscodeSettingsSnippet: vscodeSnippet(state.port),
+        ides: listIdeTargets(state.port, { claudeFound: claude.found }),
       };
     },
     'system.openDashboard': () => openDashboard(ctx),
@@ -189,8 +209,18 @@ export function createHandlers(ctx: HandlerContext): Handlers {
     'system.checkForUpdates': () => {
       const state = manager.getState();
       const external = state.ownership === 'external' ? state.status?.server.version ?? null : null;
-      return checkForUpdates({ bundled: ctx.bundledBackendVersion, external });
+      return checkForUpdates({ bundled: ctx.coreUpdater.getState().active ?? ctx.bundledBackendVersion, external });
     },
+    'coreUpdate.getState': () => ctx.coreUpdater.getState(),
+    'coreUpdate.check': () => ctx.coreUpdater.check(),
+    'coreUpdate.install': () => ctx.coreUpdater.install(),
+    'coreUpdate.revert': async () => {
+      const result = await ctx.coreUpdater.revert();
+      if (!result.ok && !result.message) return { ok: false, message: t('h.coreNothingToRevert') };
+      return result.ok ? { ok: true, message: t('h.coreReverted', { version: result.version ?? '' }) } : result;
+    },
+    'ide.connect': ({ id }) => changeIde(ctx, id, true),
+    'ide.disconnect': ({ id }) => changeIde(ctx, id, false),
     'appUpdate.getState': () => ctx.appUpdater.getState(),
     'appUpdate.check': () => ctx.appUpdater.check(),
     'appUpdate.download': () => ctx.appUpdater.download(),

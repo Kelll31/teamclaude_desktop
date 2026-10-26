@@ -9,7 +9,7 @@ import {
   type ActivityEvent, type History, type HistoryDelta, type QuotaPoint, type Sample,
 } from '../shared/activity';
 import type { DesktopEvent, PageId } from '../shared/ipc';
-import type { ActionResult, AppUpdateState, BackendState, DesktopSettings, JobView, LogLine } from '../shared/types';
+import type { ActionResult, AppUpdateState, BackendState, CoreUpdateState, DesktopSettings, JobView, LogLine } from '../shared/types';
 import { bridge, call } from './api';
 import { setLanguage, t } from './i18n';
 
@@ -22,6 +22,7 @@ interface Data {
   samples: Sample[];
   quota: QuotaPoint[];
   appUpdate: AppUpdateState | null;
+  coreUpdate: CoreUpdateState | null;
   loadError: string | null;
 }
 
@@ -30,6 +31,7 @@ type Action =
   | { type: 'history'; history: History }
   | { type: 'historyDelta'; delta: HistoryDelta }
   | { type: 'appUpdate'; state: AppUpdateState }
+  | { type: 'coreUpdate'; state: CoreUpdateState }
   | { type: 'settings'; settings: DesktopSettings }
   | { type: 'logs'; lines: LogLine[]; replace?: boolean }
   | { type: 'job'; job: JobView }
@@ -48,6 +50,8 @@ function reduce(data: Data, action: Action): Data {
       return { ...data, ...appendHistory(data, freshPart(data, action.delta)) };
     case 'appUpdate':
       return { ...data, appUpdate: action.state };
+    case 'coreUpdate':
+      return { ...data, coreUpdate: action.state };
     case 'settings':
       return { ...data, settings: action.settings };
     case 'logs': {
@@ -83,7 +87,7 @@ interface Store extends Data {
 
 const StoreContext = createContext<Store | null>(null);
 
-const INITIAL: Data = { backend: null, settings: null, logs: [], jobs: [], ...EMPTY_HISTORY, appUpdate: null, loadError: null };
+const INITIAL: Data = { backend: null, settings: null, logs: [], jobs: [], ...EMPTY_HISTORY, appUpdate: null, coreUpdate: null, loadError: null };
 
 let toastSeq = 0;
 
@@ -103,17 +107,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         case 'backend': dispatch({ type: 'backend', state: event.state }); break;
         case 'history': dispatch({ type: 'historyDelta', delta: event.delta }); break;
         case 'appUpdate': dispatch({ type: 'appUpdate', state: event.state }); break;
+        case 'coreUpdate': dispatch({ type: 'coreUpdate', state: event.state }); break;
         case 'log': dispatch({ type: 'logs', lines: event.lines }); break;
         case 'job': dispatch({ type: 'job', job: event.job }); break;
         case 'settings': dispatch({ type: 'settings', settings: event.settings }); break;
         case 'navigate': setPage(event.page); break;
       }
     });
-    Promise.all([call('backend.getState'), call('settings.get'), call('logs.get'), call('jobs.list'), call('history.get'), call('appUpdate.getState')])
-      .then(([state, settings, logs, jobs, history, appUpdate]) => {
+    Promise.all([call('backend.getState'), call('settings.get'), call('logs.get'), call('jobs.list'), call('history.get'), call('appUpdate.getState'), call('coreUpdate.getState')])
+      .then(([state, settings, logs, jobs, history, appUpdate, coreUpdate]) => {
         dispatch({ type: 'backend', state });
         dispatch({ type: 'history', history });
         dispatch({ type: 'appUpdate', state: appUpdate });
+        dispatch({ type: 'coreUpdate', state: coreUpdate });
         dispatch({ type: 'settings', settings });
         dispatch({ type: 'logs', lines: logs, replace: true });
         dispatch({ type: 'jobs', jobs });

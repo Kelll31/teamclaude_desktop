@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { buildDiagnosticReport } from '../src/services/diagnostics';
 import { normalizeStatus } from '../src/services/normalize';
 import { DEFAULT_SETTINGS, OwnedPidFile, SettingsStore, type FileIO } from '../src/services/settings-store';
-import { format, languageForLocale, translator } from '../src/shared/i18n';
+import { format, LANGUAGES, languageForLocale, translator } from '../src/shared/i18n';
+import { de } from '../src/shared/locales/de';
 import { en } from '../src/shared/locales/en';
+import { es } from '../src/shared/locales/es';
+import { fr } from '../src/shared/locales/fr';
 import { ja } from '../src/shared/locales/ja';
+import { pt } from '../src/shared/locales/pt';
 import { ru } from '../src/shared/locales/ru';
+import { uk } from '../src/shared/locales/uk';
+import { zh } from '../src/shared/locales/zh';
 import type { BackendState, SystemInfo } from '../src/shared/types';
 import { rawAccount, rawStatus } from './fixtures';
 
@@ -67,24 +73,37 @@ describe('OwnedPidFile', () => {
 });
 
 describe('i18n', () => {
+  const translations: Record<string, Record<string, string>> = { ru, uk, de, fr, es, pt, zh, ja };
+
+  it('the language list and the catalogues match', () => {
+    expect(LANGUAGES.map(l => l.code).sort()).toEqual(['en', ...Object.keys(translations)].sort());
+  });
+
   it('every catalogue has exactly the English keys', () => {
     const keys = Object.keys(en).sort();
-    expect(Object.keys(ru).sort()).toEqual(keys);
-    expect(Object.keys(ja).sort()).toEqual(keys);
+    for (const [code, catalogue] of Object.entries(translations)) expect(Object.keys(catalogue).sort(), code).toEqual(keys);
   });
 
   it('translations keep the same placeholders as English', () => {
     const vars = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort();
     for (const [key, text] of Object.entries(en)) {
-      expect(vars((ru as Record<string, string>)[key]!), `ru ${key}`).toEqual(vars(text));
-      expect(vars((ja as Record<string, string>)[key]!), `ja ${key}`).toEqual(vars(text));
+      for (const [code, catalogue] of Object.entries(translations)) expect(vars(catalogue[key]!), `${code} ${key}`).toEqual(vars(text));
+    }
+  });
+
+  it('no translation is left empty', () => {
+    for (const [code, catalogue] of Object.entries(translations)) {
+      for (const [key, text] of Object.entries(catalogue)) expect(text.trim(), `${code} ${key}`).not.toBe('');
     }
   });
 
   it('formats, maps locales and falls back to English', () => {
     expect(format('{a} and {b}', { a: 1 })).toBe('1 and {b}');
     expect(languageForLocale('ru-RU')).toBe('ru');
-    expect(languageForLocale('de-DE')).toBe('en');
+    expect(languageForLocale('de-DE')).toBe('de');
+    expect(languageForLocale('zh-CN')).toBe('zh');
+    expect(languageForLocale('pt_BR')).toBe('pt');
+    expect(languageForLocale('ko-KR')).toBe('en');
     expect(languageForLocale(undefined)).toBe('en');
     expect(translator('xx')('nav.overview')).toBe('Overview');
   });

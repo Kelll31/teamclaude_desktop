@@ -6,7 +6,7 @@ import { LANGUAGES, t, type MessageKey } from '../i18n';
 import { useStore } from '../store';
 
 const NOTIFICATIONS: Array<keyof NotificationPrefs> = [
-  'proxyCrashed', 'authExpired', 'allUnavailable', 'quotaExhausted', 'backendRecovered', 'updateAvailable', 'appUpdateReady',
+  'proxyCrashed', 'authExpired', 'allUnavailable', 'quotaExhausted', 'backendRecovered', 'updateAvailable', 'appUpdateReady', 'coreUpdated',
 ];
 
 export function Settings() {
@@ -57,7 +57,10 @@ export function Settings() {
           </div>
         </Card>
         <Card title={t('settings.updates')}>
-          <Toggle label={t('settings.autoUpdate')} checked={settings.autoUpdate} onChange={v => update({ autoUpdate: v })} description={t('settings.autoUpdateDesc')} />
+          <div className="divide-y divide-border">
+            <Toggle label={t('settings.autoUpdate')} checked={settings.autoUpdate} onChange={v => update({ autoUpdate: v })} description={t('settings.autoUpdateDesc')} />
+            <Toggle label={t('settings.autoUpdateCore')} checked={settings.autoUpdateCore} onChange={v => update({ autoUpdateCore: v })} description={t('settings.autoUpdateCoreDesc')} />
+          </div>
           <Button className="mt-2" variant="ghost" onClick={() => setPage('about')}>{t('about.appTitle')}</Button>
         </Card>
         <Card title={t('settings.notifications')}>

@@ -6,7 +6,7 @@
 
 import type { History, HistoryDelta } from './activity';
 import type {
-  ActionResult, AppUpdateState, BackendState, DesktopSettings, DistributionMode, IntegrationInfo, JobView, LogLine,
+  ActionResult, AppUpdateState, BackendState, CoreUpdateState, IdeId, DesktopSettings, DistributionMode, IntegrationInfo, JobView, LogLine,
   SystemInfo, UpdateCheckResult,
 } from './types';
 
@@ -63,6 +63,14 @@ export interface Methods {
   'appUpdate.check': { args: void; result: AppUpdateState };
   'appUpdate.download': { args: void; result: AppUpdateState };
   'appUpdate.install': { args: void; result: ActionResult };
+
+  'coreUpdate.getState': { args: void; result: CoreUpdateState };
+  'coreUpdate.check': { args: void; result: CoreUpdateState };
+  'coreUpdate.install': { args: void; result: CoreUpdateState };
+  'coreUpdate.revert': { args: void; result: ActionResult };
+
+  'ide.connect': { args: { id: IdeId }; result: ActionResult };
+  'ide.disconnect': { args: { id: IdeId }; result: ActionResult };
 }
 
 /** Links the main process opens, by a fixed list. */
@@ -77,6 +85,7 @@ export type DesktopEvent =
   | { type: 'backend'; state: BackendState }
   | { type: 'history'; delta: HistoryDelta }
   | { type: 'appUpdate'; state: AppUpdateState }
+  | { type: 'coreUpdate'; state: CoreUpdateState }
   | { type: 'log'; lines: LogLine[] }
   | { type: 'job'; job: JobView }
   | { type: 'settings'; settings: DesktopSettings }

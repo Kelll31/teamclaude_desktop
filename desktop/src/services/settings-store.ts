@@ -21,6 +21,9 @@ export const DEFAULT_SETTINGS: DesktopSettings = {
   // The one exception: this build exists to be updated from the fork's
   // releases. It checks the release feed only; it calls no provider.
   autoUpdate: true,
+  // Same for the proxy core: TeamClaude releases come from npm, the only
+  // place upstream publishes them.
+  autoUpdateCore: true,
   notifications: {
     proxyCrashed: true,
     authExpired: true,
@@ -29,6 +32,7 @@ export const DEFAULT_SETTINGS: DesktopSettings = {
     backendRecovered: true,
     updateAvailable: true,
     appUpdateReady: true,
+    coreUpdated: true,
   },
 };
 

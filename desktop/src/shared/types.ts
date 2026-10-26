@@ -189,6 +189,8 @@ export interface NotificationPrefs {
   updateAvailable: boolean;
   /** A new version of this app has been downloaded and installs on restart. */
   appUpdateReady: boolean;
+  /** The proxy core was switched to a newer TeamClaude from npm. */
+  coreUpdated: boolean;
 }
 
 export interface DesktopSettings {
@@ -202,7 +204,27 @@ export interface DesktopSettings {
   restartOnCrash: boolean;
   /** Check the releases for a new app version, download it and install it on quit. */
   autoUpdate: boolean;
+  /** Fetch new TeamClaude releases from npm and run the proxy on them. */
+  autoUpdateCore: boolean;
   notifications: NotificationPrefs;
+}
+
+/** Where the TeamClaude the app runs comes from. */
+export type CoreSource = 'bundled' | 'downloaded' | 'checkout';
+
+export interface CoreUpdateState {
+  /** Set when this copy never replaces its core (a development run). */
+  unsupported: 'development' | 'no-backend' | null;
+  phase: 'idle' | 'checking' | 'up-to-date' | 'available' | 'installing' | 'error';
+  /** The version new proxy starts use, and where it comes from. */
+  active: string | null;
+  source: CoreSource | null;
+  bundled: string | null;
+  latest: string | null;
+  error: string | null;
+  /** A version that failed to start and was taken back out. */
+  rolledBack: { version: string; previous: string } | null;
+  checkedAt: number | null;
 }
 
 /** Why this copy of the app cannot update itself. */
@@ -234,6 +256,19 @@ export interface IntegrationInfo {
   /** Shell snippets that point a client at the proxy. No secrets. */
   env: { posix: string; powershell: string; cmd: string };
   vscodeSettingsSnippet: string;
+  ides: IdeTarget[];
+}
+
+export type IdeId = 'claude' | 'vscode' | 'vscode-insiders' | 'cursor' | 'windsurf' | 'vscodium';
+
+export interface IdeTarget {
+  id: IdeId;
+  name: string;
+  installed: boolean;
+  /** `other`: ANTHROPIC_BASE_URL is set, to something else. */
+  status: 'connected' | 'other' | 'not-connected' | 'unreadable';
+  current: string | null;
+  settingsPath: string;
 }
 
 export interface SystemInfo {

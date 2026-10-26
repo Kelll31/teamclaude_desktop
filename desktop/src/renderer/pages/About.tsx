@@ -1,7 +1,7 @@
-import { Download, ExternalLink, RefreshCw, RotateCw } from 'lucide-react';
+import { Download, ExternalLink, RefreshCw, RotateCw, Undo2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ExternalLink as ExternalLinkTarget } from '../../shared/ipc';
-import type { AppUpdateState, SystemInfo, UpdateCheckResult } from '../../shared/types';
+import type { AppUpdateState, CoreUpdateState, SystemInfo, UpdateCheckResult } from '../../shared/types';
 import { call } from '../api';
 import { ActionButton, Banner, Button, Card, PageHeader } from '../components/ui';
 import { phaseText, unknown } from '../format';
@@ -62,6 +62,54 @@ function AppUpdateCard() {
   );
 }
 
+function coreUpdateText(s: CoreUpdateState): string {
+  if (s.unsupported === 'development') return t('about.coreUnsupported');
+  if (s.rolledBack) return t('about.coreRolledBack', s.rolledBack);
+  const latest = s.latest ?? '';
+  switch (s.phase) {
+    case 'idle': return t('about.coreIdle');
+    case 'checking': return t('about.coreChecking');
+    case 'up-to-date': return t('about.coreUpToDate');
+    case 'available': return t('about.coreAvailable', { latest });
+    case 'installing': return t('about.coreInstalling', { latest });
+    case 'error': return t('about.coreError', { error: s.error ?? '' });
+  }
+}
+
+/** The TeamClaude core the proxy runs, kept current from npm. */
+function CoreUpdateCard() {
+  const { coreUpdate: core, run } = useStore();
+  if (!core || core.unsupported === 'no-backend') return null;
+  const busy = core.phase === 'checking' || core.phase === 'installing';
+  const source = core.source === 'downloaded'
+    ? t('about.coreSource.downloaded', { bundled: core.bundled ?? unknown() })
+    : core.source ? t(`about.coreSource.${core.source}` as MessageKey) : '';
+  return (
+    <Card title={t('about.coreTitle')}>
+      <div className="text-[13px] text-fg">{t('about.coreCurrent', { version: core.active ?? unknown() })}</div>
+      <p className="mt-0.5 text-[12px] text-muted">{source}</p>
+      <p className={`mt-1 text-[12px] ${core.phase === 'error' ? 'text-bad' : 'text-muted'}`}>{coreUpdateText(core)}</p>
+      {core.phase === 'installing' && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-panel-2" role="progressbar" aria-busy>
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-accent" />
+        </div>
+      )}
+      {!core.unsupported && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {core.phase === 'available' ? (
+            <ActionButton variant="primary" icon={<Download className="size-3.5" aria-hidden />} onAction={async () => { await call('coreUpdate.install'); }}>{t('about.coreInstall', { latest: core.latest ?? '' })}</ActionButton>
+          ) : (
+            <ActionButton disabled={busy} icon={<RefreshCw className="size-3.5" aria-hidden />} onAction={async () => { await call('coreUpdate.check'); }}>{t('about.coreCheck')}</ActionButton>
+          )}
+          {core.source === 'downloaded' && (
+            <ActionButton disabled={busy} icon={<Undo2 className="size-3.5" aria-hidden />} onAction={() => run(() => call('coreUpdate.revert'))}>{t('about.coreRevert')}</ActionButton>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 /** One line for the bundled backend and one for an attached external one. */
 function UpdateVerdicts({ update, onNotes }: { update: UpdateCheckResult; onNotes: () => void }) {
   if (update.error) return <p className="mt-2 text-[12px] text-bad">{t('about.checkFailed', { error: update.error })}</p>;
@@ -101,6 +149,7 @@ export function About() {
       <Banner tone="info" title={t('about.communityTitle')}>{t('about.communityBody')}</Banner>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-4">
         <AppUpdateCard />
+        <CoreUpdateCard />
         <Card title={t('about.versions')}>
           {info && (
             <dl className="divide-y divide-border">

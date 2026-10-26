@@ -51,10 +51,10 @@ stop a proxy it did not start.
 | Sessions | Session counts, and the individual sessions when the proxy runs with `proxy.sessionDetail`, filterable by account and client. |
 | Activity | Changes the app observed between status readings (switches, accounts becoming unavailable) and routing lines from the proxy's log, without request content. |
 | Routing | Distribution mode (off, even, adaptive, or by load — offered when the running TeamClaude has that mode), the requests each account served in the last ten minutes, switch threshold, priorities, model routes, background probe and warm-up. Settings that can spend extra requests are off by default and carry a warning. |
-| Integrations | Detects `claude` and `codex` on PATH, checks the proxy, gives copyable environment lines for bash/zsh, PowerShell and cmd, the VS Code snippet, and can open a terminal with `ANTHROPIC_BASE_URL` set. |
-| Settings | Theme (dark, light, system), language (English, Русский, 日本語), tray and startup behaviour, notifications, the config directory, diagnostics. |
+| Integrations | Detects `claude` and `codex` on PATH, checks the proxy, gives copyable environment lines for bash/zsh, PowerShell and cmd, and can open a terminal with `ANTHROPIC_BASE_URL` set. **Connect an editor** points Claude Code (`~/.claude/settings.json`, read by the CLI and every editor extension) or a VS Code-family editor (VS Code, Insiders, Cursor, Windsurf, VSCodium) at the proxy in one click; see below. |
+| Settings | Theme (dark, light, system), language (English, Русский, Українська, Deutsch, Français, Español, Português (Brasil), 简体中文, 日本語), tray and startup behaviour, notifications, the config directory, diagnostics. |
 | Logs | The managed proxy's stdout/stderr and the app's own notes, sanitized; filter, search, auto-scroll, clear, the backend crash log, and **Export diagnostics**. |
-| About | Desktop, bundled backend and running backend versions, links, manual update check. |
+| About | Desktop, bundled backend and running backend versions, app updates, proxy core updates, links. |
 
 Quota numbers come only from what the backend has seen. When there is no
 reading yet the app says **Unknown**, never a guess. A window the plan does
@@ -170,6 +170,50 @@ background and installs it silently when the app quits, or at once from
 turns this off; then About offers Check and Download by hand. The portable
 `.exe` and the `.deb` cannot replace themselves: About says so and links to
 the releases page. A development run never checks.
+
+### Proxy core updates
+
+The TeamClaude backend ("core") is updated separately from the app, straight
+from upstream's npm releases of `@karpeleslab/teamclaude`. Two minutes after
+launch and every 6 hours (**Settings → Updates → Update the proxy core
+automatically**, on by default) the app reads the registry's `latest`, and
+when it is newer than the core in use:
+
+1. downloads only `https://registry.npmjs.org/@karpeleslab/teamclaude/-/teamclaude-<version>.tgz`
+   (at most 20 MB) and checks it against the registry's sha512 `integrity`;
+2. unpacks `src/`, `package.json` and `LICENSE` into `<userData>/core/<version>`,
+   refusing links and any path that leaves that directory, and checks the
+   package name and version;
+3. runs `teamclaude --version` from it and expects the version back;
+4. makes it the core new proxy starts use, and restarts a proxy the app
+   started. If that proxy does not come up, the previous core goes back, the
+   version is recorded in `<userData>/core/state.json` and is not installed
+   automatically again (About still offers it).
+
+The bundled copy is never modified, so **About → Proxy core → Use the bundled
+version** always works, and an app update that ships a newer bundled core
+takes over from an older download. With automatic updates off, About offers
+Check now and Install. A development run uses the repository checkout and
+never downloads a core. A TeamClaude the app did not start is left alone.
+
+### Connecting an editor
+
+**Integrations → Connect an editor** lists Claude Code and the VS Code-family
+editors found on this machine with their state (connected, pointing
+elsewhere, not connected). Connect writes `ANTHROPIC_BASE_URL` for the proxy:
+
+- Claude Code: `env.ANTHROPIC_BASE_URL` in `~/.claude/settings.json`
+  (`$CLAUDE_CONFIG_DIR` when set). The CLI and the editor extensions all read
+  it, so while it is connected Claude Code needs the proxy running.
+- VS Code, Insiders, Cursor, Windsurf, VSCodium: the
+  `claudeCode.environmentVariables` entry in the editor's user
+  `settings.json`. The file is JSONC; only that one key is edited in place,
+  so comments and layout stay as they were, and other variables in the list
+  are kept.
+
+The first change saves `settings.json.teamclaude-backup` next to the file.
+Disconnect removes only `ANTHROPIC_BASE_URL`. A file that cannot be parsed
+is reported and left untouched. Reload the editor window afterwards.
 
 Publishing a release:
 
