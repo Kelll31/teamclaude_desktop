@@ -1,7 +1,7 @@
 {
   "name": "teamclaude-desktop",
   "productName": "TeamClaude Desktop",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Desktop control panel for a local TeamClaude proxy (Windows and Linux)",
   "license": "MIT",

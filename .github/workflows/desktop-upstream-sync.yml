@@ -1,6 +1,6 @@
 name: Desktop upstream sync (fork, unofficial)
 
-# Keeps the Kelll31/teamclaude fork's desktop branch current with upstream
+# Keeps the Kelll31/teamclaude_desktop fork's desktop branch current with upstream
 # KarpelesLab/teamclaude. Daily (and on demand) it merges upstream/master into
 # fork/desktop-releases, runs the backend and desktop checks, and pushes the
 # merge. When the merge changes the core version in the root package.json, it
@@ -28,7 +28,7 @@ env:
 jobs:
   sync:
     name: merge upstream, check, push
-    if: github.repository == 'Kelll31/teamclaude'
+    if: github.repository == 'Kelll31/teamclaude_desktop'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:

@@ -29,7 +29,7 @@ Already logged into Claude Code? `teamclaude import` takes its credentials inste
 
 ## Desktop app
 
-**TeamClaude Desktop** is a control panel for the same local proxy on Windows and Linux: start or attach to it, watch every account's 5-hour and weekly quota, switch, prefer and reorder accounts, sign in, set routing, and keep it all in the tray. It bundles the backend, so Node.js is not needed, and it holds no credentials. Unofficial, unsigned builds that update themselves are on the [Kelll31/teamclaude releases](https://github.com/Kelll31/teamclaude/releases); see [docs/desktop.md](docs/desktop.md).
+**TeamClaude Desktop** is a control panel for the same local proxy on Windows and Linux: start or attach to it, watch every account's 5-hour and weekly quota, switch, prefer and reorder accounts, sign in, set routing, and keep it all in the tray. It bundles the backend, so Node.js is not needed, and it holds no credentials. Unofficial, unsigned builds that update themselves are on the [Kelll31/teamclaude_desktop releases](https://github.com/Kelll31/teamclaude_desktop/releases); see [docs/desktop.md](docs/desktop.md).
 
 ![TeamClaude Desktop: live quotas, adding a service, connection test, routing, and Russian interface](docs/assets/desktop-demo.gif)
 

@@ -1,5 +1,5 @@
 > **Unofficial build.** TeamClaude Desktop {{VERSION}} is built and published by the
-> [Kelll31/teamclaude](https://github.com/Kelll31/teamclaude) fork. It is **not** a
+> [Kelll31/teamclaude_desktop](https://github.com/Kelll31/teamclaude_desktop) fork. It is **not** a
 > TeamClaude release and is not supported by the TeamClaude maintainers
 > ([KarpelesLab/teamclaude](https://github.com/KarpelesLab/teamclaude)). The builds are
 > **not code-signed**: Windows SmartScreen warns before the first install
@@ -7,7 +7,7 @@
 
 A desktop control panel for a local TeamClaude proxy. It bundles the backend, so
 Node.js is not needed. Accounts, routing and the config stay in TeamClaude; the
-app holds no credentials.
+app does not persist account credentials. User-entered API keys are passed to the backend for saving and may be used for an explicit connection test.
 
 | File | For |
 | --- | --- |
@@ -21,24 +21,20 @@ and every 6 hours, download in the background and install when the app quits
 (Settings → Updates). `latest.yml` and `latest-linux.yml` are the update
 feed.
 
-### What's new in 0.3
+### What's new in 0.3.1
 
-- **Proxy core updates from npm.** The bundled TeamClaude is kept current with
-  upstream's npm releases: npm registry signature and sha512 checked, test-run,
-  switched, with rollback if the new core does not start (Settings → Updates).
-- **Connect an editor in one click**: Claude Code (all editors and the CLI),
-  VS Code, Insiders, Cursor, Windsurf, VSCodium, Zed; JetBrains IDEs follow
-  Claude Code. "Open a folder…" starts an editor with the proxy set.
-- **Usage** page: tokens, cache hit rate and requests per account, CSV export.
-- **Health** page: proxy response time, restarts, per-account errors and switches.
-- **Run-out forecast**: when an account will hit its limit before the reset,
-  on Accounts and Overview, with a notification an hour ahead.
-- **Routing profiles**: save threshold + distribution under a name, apply from
-  the Routing page or the tray.
-- **Quota widget**: a small always-on-top window with every account's quota.
-- **Global shortcut** to switch to the next account (off by default).
-- **Encrypted backup** of the TeamClaude config and quota state, to move to
-  another computer (Settings → Backup and transfer).
-- **9 languages**: English, Русский, Українська, Deutsch, Français, Español,
-  Português (Brasil), 简体中文, 日本語.
+- Add third-party Anthropic-compatible services from Accounts: API address, key,
+  authentication method, model mappings and priority, without editing config files.
+- Test a selected model before saving; the test reports connection/authentication
+  failures without exposing keys or upstream response bodies. A real API may bill
+  the short test request.
+- Align the API key and priority fields.
+- Translate distribution modes and operation summaries, including Russian;
+  the new service form supports all nine interface languages. Original CLI output
+  remains available under Technical details.
+- Updated GIF walkthrough in the README and desktop guide.
+- Update feed and release workflow follow the renamed teamclaude_desktop repository.
 - Bundles TeamClaude 1.1.26.
+
+Windows installer and Linux AppImage copies support automatic updates.
+Portable Windows and Debian packages are updated by downloading/installing the new file.

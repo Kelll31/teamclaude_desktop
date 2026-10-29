@@ -1,4 +1,4 @@
-// Self-update of this app from the fork's GitHub Releases (Kelll31/teamclaude),
+// Self-update of this app from the fork's GitHub Releases (Kelll31/teamclaude_desktop),
 // through electron-updater. These are unofficial, unsigned builds; the
 // upstream project publishes none. The updater object is injected, so the
 // policy here is tested without Electron. A copy that cannot update itself (a
@@ -9,7 +9,7 @@ import { EventEmitter } from 'node:events';
 import type { AppUpdateState, AppUpdateUnsupported } from '../shared/types';
 import { describeError } from './sanitize';
 
-export const RELEASES_URL = 'https://github.com/Kelll31/teamclaude/releases';
+export const RELEASES_URL = 'https://github.com/Kelll31/teamclaude_desktop/releases';
 /** Leave the first minute of a launch to the proxy. */
 export const FIRST_CHECK_DELAY_MS = 60_000;
 export const CHECK_INTERVAL_MS = 6 * 60 * 60_000;

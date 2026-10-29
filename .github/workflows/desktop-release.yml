@@ -1,6 +1,6 @@
 name: Desktop release (fork, unofficial)
 
-# Unofficial, unsigned TeamClaude Desktop builds for the Kelll31/teamclaude
+# Unofficial, unsigned TeamClaude Desktop builds for the Kelll31/teamclaude_desktop
 # fork. A tag desktop-vX.Y.Z (matching desktop/package.json) builds Windows and
 # Linux packages with the update feed, checks and smoke-tests them, and
 # publishes one GitHub release with SHA-256 sums. Installed apps update from
@@ -24,7 +24,7 @@ defaults:
 jobs:
   build:
     name: build ${{ matrix.target }}
-    if: github.repository == 'Kelll31/teamclaude'
+    if: github.repository == 'Kelll31/teamclaude_desktop'
     strategy:
       fail-fast: true
       matrix:

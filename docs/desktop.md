@@ -211,14 +211,14 @@ Artifacts land in `desktop/dist/`. `node scripts/check-dist.mjs win` (or
 carries a credential or a config file. The Linux `.deb` needs `fakeroot` and
 `dpkg`.
 
-## Releases and updates (Kelll31/teamclaude fork)
+## Releases and updates (Kelll31/teamclaude_desktop fork)
 
 > Unofficial. These builds are made and published by the
-> [Kelll31/teamclaude](https://github.com/Kelll31/teamclaude) fork, are not
+> [Kelll31/teamclaude_desktop](https://github.com/Kelll31/teamclaude_desktop) fork, are not
 > code-signed, and are not TeamClaude releases. Upstream publishes no desktop
 > builds.
 
-Releases live at <https://github.com/Kelll31/teamclaude/releases> under tags
+Releases live at <https://github.com/Kelll31/teamclaude_desktop/releases> under tags
 `desktop-vX.Y.Z`. The Windows installer and the AppImage update themselves:
 a minute after launch and every 6 hours the app reads the release feed
 (`latest.yml`, `latest-linux.yml`), downloads a newer version in the

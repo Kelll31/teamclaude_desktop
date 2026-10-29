@@ -1,4 +1,4 @@
-# Releases of the Kelll31/teamclaude fork: unofficial, unsigned builds that
+# Releases of the Kelll31/teamclaude_desktop fork: unofficial, unsigned builds that
 # update themselves from that fork's GitHub Releases. Everything else comes
 # from electron-builder.yml. The publish block only tells electron-builder
 # where the feed is, so it writes resources/app-update.yml into the package and
@@ -9,7 +9,7 @@ extends: ./electron-builder.yml
 publish:
   provider: github
   owner: Kelll31
-  repo: teamclaude
+  repo: teamclaude_desktop
   releaseType: release
   # The fork also carries upstream's v1.x npm tags; desktop releases have their own.
   tagNamePrefix: desktop-v
