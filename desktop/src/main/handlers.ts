@@ -27,6 +27,8 @@ import type { LogBuffer } from '../services/log-buffer';
 import { describeError, sanitizeText } from '../services/sanitize';
 import type { SettingsStore } from '../services/settings-store';
 import { checkForUpdates } from '../services/update-check';
+import { testBackend } from '../services/backend-account';
+import { distributionLabel } from '../shared/distribution-label';
 import type { Handlers } from './ipc';
 
 const LINKS = {
@@ -122,7 +124,7 @@ export async function applyProfile(ctx: HandlerContext, id: string): Promise<Act
     const r = await ctx.manager.control('/teamclaude/threshold', { percent: profile.threshold });
     if (!r.ok) return { ok: false, message: r.error ?? t('h.profileFailed', { name: profile.name }) };
   }
-  if (profile.distribution !== null) ctx.jobs.run('distribute', t('j.distribute', { mode: profile.distribution }), distributeArgs(profile.distribution));
+  if (profile.distribution !== null) ctx.jobs.run('distribute', t('j.distribute', { mode: distributionLabel(profile.distribution, t) }), distributeArgs(profile.distribution));
   return { ok: true, message: t('h.profileApplied', { name: profile.name }) };
 }
 
@@ -242,13 +244,15 @@ export function createHandlers(ctx: HandlerContext): Handlers {
     },
     'accounts.addApiKey': ({ name, apiKey, priority }) =>
       jobs.run('apikey', name ? t('j.apikeyNamed', { name }) : t('j.apikey'), apiKeyArgs(name, priority), apiKey),
+    'accounts.addBackend': input => jobs.run('backend', t('service.addJob', { name: input.name }), ['add-backend'], JSON.stringify(input)),
+    'accounts.testBackend': input => testBackend(input),
     'accounts.import': ({ name }) => jobs.run('import', t('j.import'), importArgs(name)),
     'accounts.remove': ({ account }) => jobs.run('remove', t('j.remove', { name: account }), removeArgs(account)),
     'accounts.rename': ({ account, newName }) => jobs.run('rename', t('j.rename', { from: account, to: newName }), renameArgs(account, newName)),
 
     'routing.setThreshold': async ({ percent }) =>
       fromControl(await manager.control('/teamclaude/threshold', { percent }), t('h.threshold', { percent })),
-    'routing.setDistribution': ({ mode }) => jobs.run('distribute', t('j.distribute', { mode }), distributeArgs(mode)),
+    'routing.setDistribution': ({ mode }) => jobs.run('distribute', t('j.distribute', { mode: distributionLabel(mode, t) }), distributeArgs(mode)),
     'routing.setProbe': ({ seconds }) => jobs.run('probe', seconds ? t('j.probeOn', { s: seconds }) : t('j.probeOff'), intervalArgs('probe', seconds)),
     'routing.setWarmup': ({ seconds }) => jobs.run('warmup', seconds ? t('j.warmOn', { s: seconds }) : t('j.warmOff'), intervalArgs('warmup', seconds)),
 

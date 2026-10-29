@@ -1,8 +1,10 @@
+import { serviceMessages } from '../service-messages';
 // Português (Brasil). As chaves são as mesmas de en.ts; o tipo impede que se pule qualquer uma.
 
 import type { MessageKey } from './en';
 
 export const pt: Record<MessageKey, string> = {
+  ...serviceMessages.pt,
   // ── common ──
   'common.unknown': 'Desconhecido',
   'common.cancel': 'Cancelar',

@@ -1,6 +1,7 @@
 import { Play, Save, Trash2, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { DistributionMode, RoutingProfile } from '../../shared/types';
+import { distributionLabel } from '../../shared/distribution-label';
 import { call } from '../api';
 import { JobPanel } from '../components/JobPanel';
 import { ActionButton, Badge, Banner, Button, Card, controlClass, EmptyState, Field, inputClass, PageHeader, Rich } from '../components/ui';
@@ -43,7 +44,7 @@ function DistributionCard() {
   const set = (m: DistributionMode) => void call('routing.setDistribution', { mode: m });
   return (
     <Card title={t('dist.title')}>
-      <p className="mb-3 text-[12px] text-muted">{t('dist.body', { mode: mode ?? unknown() })}</p>
+      <p className="mb-3 text-[12px] text-muted">{t('dist.body', { mode: distributionLabel(mode, t) })}</p>
       <div className="flex flex-wrap gap-2">
         <Button variant={mode === 'off' ? 'primary' : 'secondary'} onClick={() => set('off')}>{t('dist.off')}</Button>
         <Button variant={mode === 'even' ? 'primary' : 'secondary'} onClick={() => set('on')}>{t('dist.even')}</Button>
@@ -98,7 +99,7 @@ function ProfilesCard() {
               <div className="min-w-0">
                 <div className="text-[13px] text-fg">{p.name}</div>
                 <div className="text-[11px] text-muted">
-                  {t('profiles.summary', { threshold: p.threshold === null ? '—' : `${p.threshold}%`, mode: p.distribution ?? '—' })}
+                  {t('profiles.summary', { threshold: p.threshold === null ? '—' : `${p.threshold}%`, mode: distributionLabel(p.distribution, t) })}
                 </div>
               </div>
               <div className="flex gap-2">

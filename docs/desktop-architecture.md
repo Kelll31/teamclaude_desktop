@@ -3,8 +3,9 @@
 TeamClaude Desktop is a graphical control panel for the local TeamClaude
 proxy on Windows 10/11 x64 and Linux x64. It lives in `desktop/` as a separate
 package. It is another way to drive the proxy you already run, not a new
-client for subscription quota: it routes no model traffic and holds no
-credentials.
+client for subscription quota: model traffic flows through the backend. The
+desktop does not persist account credentials; a user-entered API key exists
+temporarily in the form and main process for saving or testing a service.
 
 ## Principles
 
@@ -12,13 +13,21 @@ credentials.
   and the config file belong to TeamClaude. The desktop reads state from the
   control API and changes it through the control API or the CLI. It keeps no
   second routing config.
-- **No change to the core package.** The npm package (`src/`) gains no
-  dependency and no API. The CLI works the same with or without the desktop
-  app installed.
-- **No credentials outside the main process.** The renderer never sees a
-  token, an API key or the config file. The main process reads four proxy
+- **No runtime dependencies added to the core.** The desktop fork adds an
+  `add-backend` CLI command accepting validated JSON on stdin, saving through
+  the existing config lock and notifying a running server. Existing CLI
+  commands work the same with or without the desktop app installed.
+- **Stored account credentials stay out of the renderer.** The renderer never
+  reads OAuth tokens, existing account keys or the config file. User-entered
+  API keys are passed through validated IPC and CLI stdin, never command-line
+  arguments; connection testing happens only in the main process. The main process reads four proxy
   fields from the config (host, port, `proxy.apiKey`, `trustLoopback`) and the
   number of accounts, and nothing else.
+- **Connection tests are explicit.** A short request is sent to the selected
+  service/model with a 20-second timeout, redirects disabled and a bounded
+  response size. Only a success category or HTTP status returns to the UI,
+  never upstream response text or exceptions that might echo a key. The form
+  says a service may bill the request. Local HTTP services are supported.
 - **Nothing runs on its own until the user turns it on.** Launch at login,
   starting the proxy on launch and restart after a crash are all off by
   default. The app sends no telemetry and starts no quota probes to produce

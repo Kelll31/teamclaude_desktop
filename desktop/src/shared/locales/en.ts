@@ -1,8 +1,10 @@
+import { serviceMessages } from '../service-messages';
 // English — the reference catalogue. Every other language must define exactly
 // these keys (the type in ru.ts / ja.ts enforces it). `{name}` placeholders are
 // filled by t(); text in `backticks` is rendered as code by the renderer.
 
 export const en = {
+  ...serviceMessages.en,
   // ── common ──
   'common.unknown': 'Unknown',
   'common.cancel': 'Cancel',

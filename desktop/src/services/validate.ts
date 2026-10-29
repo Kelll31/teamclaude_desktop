@@ -3,6 +3,7 @@
 // exactly the expected keys, and every value is range- and shape-checked.
 
 import { isLanguage } from '../shared/i18n';
+import { validBackendUrl } from './backend-account';
 import type { MethodName } from '../shared/ipc';
 import type { DesktopSettings, DistributionMode, IdeId, NotificationPrefs, Theme } from '../shared/types';
 
@@ -64,6 +65,20 @@ function object(required: string[], optional: string[], check: (v: Record<string
 
 const optionalName = (v: Record<string, unknown>): string | null =>
   v.name === undefined || isAccountName(v.name) ? null : 'invalid account name';
+
+const backendProblem = (v: Record<string, unknown>): string | null => {
+  if (!isAccountName(v.name)) return 'invalid account name';
+  if (!validBackendUrl(v.upstream)) return 'invalid API base URL';
+  if (!isApiKey(v.apiKey)) return 'invalid API key';
+  if (v.auth !== 'bearer' && v.auth !== 'x-api-key') return 'invalid authentication method';
+  if (v.priority !== undefined && !intIn(v.priority, -1000, 1000)) return 'invalid priority';
+  if (!isPlainObject(v.modelMap)) return 'invalid model mapping';
+  const pairs = Object.entries(v.modelMap);
+  const model = (s: unknown) => typeof s === 'string' && s.length > 0 && s.length <= 200 && !/\s/.test(s) && !CONTROL.test(s) && !['__proto__', 'constructor', 'prototype'].includes(s);
+  if (!pairs.length || pairs.length > 50 || pairs.some(([a, b]) => !model(a) || !model(b))) return 'invalid model mapping';
+  if (v.model !== undefined && !pairs.some(([, b]) => b === v.model)) return 'invalid test model';
+  return null;
+};
 
 const IDE_IDS: IdeId[] = ['claude', 'vscode', 'vscode-insiders', 'cursor', 'windsurf', 'vscodium', 'zed', 'jetbrains'];
 export const MAX_PROFILES = 20;
@@ -152,6 +167,8 @@ export const VALIDATORS: Record<MethodName, Validator> = {
     !isApiKey(v.apiKey) ? 'that does not look like an API key'
       : v.priority !== undefined && !intIn(v.priority, -1000, 1000) ? 'priority must be an integer from -1000 to 1000'
         : optionalName(v)),
+  'accounts.addBackend': object(['name', 'apiKey', 'upstream', 'auth', 'modelMap'], ['priority'], backendProblem),
+  'accounts.testBackend': object(['name', 'apiKey', 'upstream', 'auth', 'modelMap', 'model'], ['priority'], backendProblem),
   'accounts.import': object([], ['name'], optionalName),
   'accounts.remove': object(['account'], [], v => (isAccountName(v.account) ? null : 'invalid account')),
   'accounts.rename': object(['account', 'newName'], [], v =>

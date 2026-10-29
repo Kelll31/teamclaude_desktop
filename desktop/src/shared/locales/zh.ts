@@ -1,8 +1,10 @@
+import { serviceMessages } from '../service-messages';
 // 简体中文。键与 en.ts 相同，类型会阻止遗漏任何键。
 
 import type { MessageKey } from './en';
 
 export const zh: Record<MessageKey, string> = {
+  ...serviceMessages.zh,
   // ── 通用 ──
   'common.unknown': '未知',
   'common.cancel': '取消',

@@ -138,6 +138,42 @@ describe('TeamClaude Desktop', () => {
     await page.getByText(/"placeholder-b":/).first().waitFor();
   });
 
+  it('adds a third-party service, tests its model and saves the backend configuration', async () => {
+    let requests = 0;
+    const service = http.createServer(async (req, res) => {
+      let body = '';
+      for await (const chunk of req) body += chunk;
+      expect(req.url).toBe('/anthropic/v1/messages');
+      expect(req.headers['x-api-key']).toBe('demo-service-key');
+      expect(JSON.parse(body)).toMatchObject({ model: 'vendor/sonnet', max_tokens: 1 });
+      requests++;
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ type: 'message', content: [{ type: 'text', text: 'Hi' }] }));
+    });
+    await new Promise<void>(done => service.listen(0, '127.0.0.1', done));
+    try {
+      await nav('Accounts');
+      await page.getByRole('button', { name: 'Anthropic API key', exact: true }).click();
+      const keyBox = await page.getByLabel(/^API key/).boundingBox();
+      const priorityBox = await page.getByLabel(/^Priority/).boundingBox();
+      expect(Math.abs(keyBox!.y - priorityBox!.y)).toBeLessThan(1);
+      await page.getByRole('button', { name: 'Third-party service', exact: true }).click();
+      await page.getByLabel('Service name', { exact: true }).fill('demo-service');
+      const address = service.address() as AddressInfo;
+      const upstream = `http://127.0.0.1:${address.port}/anthropic`;
+      await page.getByLabel('API base URL', { exact: true }).fill(upstream);
+      await page.getByLabel(/^API key/).last().fill('demo-service-key');
+      await page.getByLabel(/^Models/).fill('claude-sonnet-4-6 = vendor/sonnet');
+      await page.getByRole('button', { name: 'Test connection', exact: true }).click();
+      await page.getByText('Connection verified: the model answered.', { exact: true }).waitFor();
+      expect(requests).toBe(1);
+      await page.getByRole('button', { name: 'Add service', exact: true }).click();
+      await eventually(status, s => s.accounts.some(a => a.name === 'demo-service'));
+      const config = JSON.parse(readFileSync(join(dir, 'teamclaude.json'), 'utf8'));
+      expect(config.accounts.find((a: { name: string }) => a.name === 'demo-service')).toMatchObject({ upstream, apiKey: 'demo-service-key', priority: 100, modelMap: { 'claude-sonnet-4-6': 'vendor/sonnet' } });
+    } finally { await new Promise<void>(done => service.close(() => done())); }
+  });
+
   it('exports diagnostics without names or keys', async () => {
     const report = join(dir, 'diagnostics.md');
     await app.evaluate(({ dialog }, path) => {

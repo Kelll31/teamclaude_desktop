@@ -1,8 +1,10 @@
+import { serviceMessages } from '../service-messages';
 // Русский. Ключи — те же, что в en.ts; тип не даёт пропустить ни одного.
 
 import type { MessageKey } from './en';
 
 export const ru: Record<MessageKey, string> = {
+  ...serviceMessages.ru,
   'common.unknown': 'Неизвестно',
   'common.cancel': 'Отмена',
   'common.save': 'Сохранить',

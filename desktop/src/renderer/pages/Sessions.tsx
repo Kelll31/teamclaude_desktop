@@ -1,8 +1,9 @@
+import { distributionLabel } from '../../shared/distribution-label';
 import { ListTree } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNow } from '../clock';
 import { CodeBlock, Card, controlClass, EmptyState, PageHeader, Rich, Stat } from '../components/ui';
-import { ago, truncateMiddle, unknown } from '../format';
+import { ago, truncateMiddle } from '../format';
 import { t } from '../i18n';
 import { useStore } from '../store';
 
@@ -36,7 +37,7 @@ export function Sessions() {
       <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
         <Stat label={t('sessions.active')} value={status.sessions.active} />
         <Stat label={t('sessions.known')} value={status.sessions.known} />
-        <Stat label={t('sessions.distribution')} value={status.sessions.distribution ?? unknown()} />
+        <Stat label={t('sessions.distribution')} value={distributionLabel(status.sessions.distribution, t)} />
         <Stat label={t('sessions.draining')} value={status.sessions.draining} sub={t('sessions.drainingSub')} />
         <Stat label={t('sessions.starved')} value={status.sessions.starvedMax} sub={t('sessions.starvedSub')} tone={status.sessions.starvedMax > 0 ? 'warn' : undefined} />
       </div>

@@ -1,8 +1,10 @@
+import { serviceMessages } from '../service-messages';
 // 日本語。キーは en.ts と同じで、型により欠落が許されません。
 
 import type { MessageKey } from './en';
 
 export const ja: Record<MessageKey, string> = {
+  ...serviceMessages.ja,
   'common.unknown': '不明',
   'common.cancel': 'キャンセル',
   'common.save': '保存',

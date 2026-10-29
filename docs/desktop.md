@@ -8,6 +8,39 @@ drives the same proxy and the same config.
 
 How it is built and why: [desktop-architecture.md](desktop-architecture.md).
 
+![Desktop walkthrough: accounts, third-party service, connection test, routing and languages](assets/desktop-demo.gif)
+
+The recording uses an isolated demo profile with placeholder keys, seeded quota
+readings and a local API fixture. No real account or billable request is used.
+
+## Add a third-party API service
+
+In **Accounts → Third-party service**, enter a unique name, the API base URL,
+the key and its authentication method (`x-api-key` or `Bearer`). The service
+must support **Anthropic Messages API**; an OpenAI-only endpoint needs a
+separate protocol adapter. Enter the address before `/v1/messages`, which the
+proxy and connection test append automatically.
+
+Enter one model ID per line. If the service uses different IDs, enter
+`Claude Code model ID = service model ID`. Choose the destination model under
+**Model to test**, then press **Test connection**. This sends a short Messages
+request with `max_tokens: 1`; a real service may charge for it. A successful
+test checks that model, not every model in the list. Keys and upstream error
+bodies are not returned in the test result.
+
+Press **Add service** to save through the backend's config lock and reload the
+running proxy. The default priority is 100 (fallback); lower numbers are
+preferred. Model mappings rename requests; they do not limit which models an
+account can serve in rotation. Keys are not saved in desktop settings or sent
+in process arguments. The form also works when the proxy is stopped.
+
+The desktop uses its bundled `add-backend` CLI command for this operation,
+including when a newer upstream proxy core is selected. Existing CLI account
+commands keep their behavior.
+
+Routing results and distribution names follow the selected interface language.
+Original CLI output remains available under **Technical details** for diagnosis.
+
 > Desktop builds are not official TeamClaude releases yet. Build them from
 > source, or use artifacts from this repository's CI for testing only.
 

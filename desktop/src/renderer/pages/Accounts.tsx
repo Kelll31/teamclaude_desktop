@@ -5,6 +5,7 @@ import type { AccountView } from '../../shared/types';
 import { call } from '../api';
 import { useNow } from '../clock';
 import { JobPanel } from '../components/JobPanel';
+import { ServiceAccount } from '../components/ServiceAccount';
 import { FiveHourBar, QuotaBar, RefreshQuotasButton, WeeklyBar } from '../components/QuotaBar';
 import { RunoutLines } from '../components/Runout';
 import { Sparkline } from '../components/Sparkline';
@@ -156,6 +157,7 @@ function AccountCard({ account, threshold, readOnly }: { account: AccountView; t
 function AddAccount() {
   const { toast } = useStore();
   const [showKey, setShowKey] = useState(false);
+  const [showService, setShowService] = useState(false);
   const [name, setName] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [priority, setPriority] = useState('');
@@ -178,10 +180,11 @@ function AddAccount() {
         <Button icon={<LogIn className="size-3.5" aria-hidden />} onClick={() => start(() => call('accounts.login', { provider: 'codex', name: optionalName }))}>{t('add.codex')}</Button>
         <Button icon={<Download className="size-3.5" aria-hidden />} onClick={() => start(() => call('accounts.import', { name: optionalName }))}>{t('add.import')}</Button>
         <Button icon={<KeyRound className="size-3.5" aria-hidden />} onClick={() => setShowKey(v => !v)}>{t('add.apikey')}</Button>
+        <Button icon={<Plus className="size-3.5" aria-hidden />} onClick={() => setShowService(v => !v)}>{t('service.add')}</Button>
       </div>
       {showKey && (
         <form
-          className="mt-4 grid grid-cols-[1fr_140px_auto] items-end gap-2 max-[700px]:grid-cols-1"
+          className="mt-4 grid grid-cols-[1fr_140px_auto] items-start gap-2 max-[700px]:grid-cols-1"
           onSubmit={e => {
             e.preventDefault();
             const p = priority.trim() === '' ? undefined : Number(priority);
@@ -196,9 +199,10 @@ function AddAccount() {
           <Field label={t('add.priority')} hint={t('add.priorityHint')}>
             <input className={inputClass} inputMode="numeric" value={priority} onChange={e => setPriority(e.target.value.replace(/[^-\d]/g, ''))} placeholder={t('add.priorityAuto')} />
           </Field>
-          <Button type="submit" variant="primary" icon={<Plus className="size-3.5" aria-hidden />} disabled={apiKey.length < 8}>{t('add.submit')}</Button>
+          <Button className="mt-5 max-[700px]:mt-0" type="submit" variant="primary" icon={<Plus className="size-3.5" aria-hidden />} disabled={apiKey.length < 8}>{t('add.submit')}</Button>
         </form>
       )}
+      {showService && <ServiceAccount />}
     </Card>
   );
 }
@@ -225,7 +229,7 @@ export function Accounts() {
         )}
       />
       <AddAccount />
-      <JobPanel kinds={['login', 'apikey', 'import', 'remove', 'rename']} />
+      <JobPanel kinds={['login', 'apikey', 'backend', 'import', 'remove', 'rename']} />
       {!status && (
         <Card><EmptyState icon={<Users className="size-8" aria-hidden />} title={t('banner.notRunning')}>{t('accounts.notRunningBody')}</EmptyState></Card>
       )}

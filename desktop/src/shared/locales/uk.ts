@@ -1,7 +1,9 @@
+import { serviceMessages } from '../service-messages';
 // Українська — ключі ті самі, що в en.ts; тип не дає пропустити жоден із них.
 import type { MessageKey } from './en';
 
 export const uk: Record<MessageKey, string> = {
+  ...serviceMessages.uk,
   // ── common ──
   'common.unknown': 'Невідомо',
   'common.cancel': 'Скасувати',

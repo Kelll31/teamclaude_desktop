@@ -13,6 +13,15 @@ import type {
 export const CALL_CHANNEL = 'tc:call';
 export const EVENT_CHANNEL = 'tc:event';
 
+export interface BackendAccountInput {
+  name: string;
+  upstream: string;
+  apiKey: string;
+  auth: 'x-api-key' | 'bearer';
+  modelMap: Record<string, string>;
+  priority?: number;
+}
+
 /** Arguments and result of every callable method. */
 export interface Methods {
   'backend.getState': { args: void; result: BackendState };
@@ -28,6 +37,8 @@ export interface Methods {
   'accounts.setPriority': { args: { account: string; priority: number }; result: ActionResult };
   'accounts.login': { args: { provider: 'claude' | 'codex'; name?: string }; result: JobView };
   'accounts.addApiKey': { args: { name?: string; apiKey: string; priority?: number }; result: JobView };
+  'accounts.addBackend': { args: BackendAccountInput; result: JobView };
+  'accounts.testBackend': { args: BackendAccountInput & { model: string }; result: { ok: boolean; code: 'ok' | 'http' | 'network' | 'invalid'; status?: number } };
   'accounts.import': { args: { name?: string }; result: JobView };
   'accounts.remove': { args: { account: string }; result: JobView };
   'accounts.rename': { args: { account: string; newName: string }; result: JobView };

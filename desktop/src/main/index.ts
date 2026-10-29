@@ -122,7 +122,12 @@ async function init(): Promise<void> {
     const spec = backendSpawnSpec(process.execPath, at, args, process.env);
     return spawn(spec.command, spec.args, { cwd: spec.cwd, env: spec.env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
   };
-  const spawnBackend = (args: string[]) => (location ? spawnAt(location, args) : null);
+  // The desktop's backend-account command is shipped with this build. A newer
+  // upstream npm core may not include the desktop fork's command yet.
+  const spawnBackend = (args: string[]) => {
+    const at = args[0] === 'add-backend' ? bundledLocation : location;
+    return at ? spawnAt(at, args) : null;
+  };
 
   const manager = new BackendManager({
     configPath: () => resolveConfigPath(),
