@@ -21,15 +21,20 @@ and every 6 hours, download in the background and install when the app quits
 (Settings → Updates). `latest.yml` and `latest-linux.yml` are the update
 feed.
 
-### What's new in 0.3.2
+### What's new in 0.3.3
 
-- Fix removing accounts when Claude and Codex use the same email address.
-  Removal now selects the account by provider and organization, preserving
-  the other account with the same email.
-- Show the provider in the removal confirmation and operation label.
-- Add regression tests for removal in both directions, organization selection,
-  and refusing ambiguous or invalid selections.
-- Bundles TeamClaude 1.1.26 with the account-removal fix.
+- **Test connection now lists models** using an OpenAI-compatible
+  `GET /v1/models` request with Bearer authorization. It never runs a model.
+  Only the API address and key are needed for the check.
+- Pick a returned model and add it to the service form. Model mappings can
+  still be entered manually for Claude Code.
+- API addresses with or without a trailing `/v1` are accepted without
+  duplicating `/v1` when a service is saved.
+- Bearer is the default for new services; the authentication selector controls
+  subsequent Claude requests. Listing models does not verify Claude Messages support.
+- Includes the 0.3.2 fix for separately removing Claude and Codex accounts
+  with the same email address.
+- Updated translations and GIF walkthrough.
 
 Windows installer and Linux AppImage copies support automatic updates.
 Portable Windows and Debian packages are updated by downloading/installing the new file.
