@@ -21,20 +21,15 @@ and every 6 hours, download in the background and install when the app quits
 (Settings → Updates). `latest.yml` and `latest-linux.yml` are the update
 feed.
 
-### What's new in 0.3.1
+### What's new in 0.3.2
 
-- Add third-party Anthropic-compatible services from Accounts: API address, key,
-  authentication method, model mappings and priority, without editing config files.
-- Test a selected model before saving; the test reports connection/authentication
-  failures without exposing keys or upstream response bodies. A real API may bill
-  the short test request.
-- Align the API key and priority fields.
-- Translate distribution modes and operation summaries, including Russian;
-  the new service form supports all nine interface languages. Original CLI output
-  remains available under Technical details.
-- Updated GIF walkthrough in the README and desktop guide.
-- Update feed and release workflow follow the renamed teamclaude_desktop repository.
-- Bundles TeamClaude 1.1.26.
+- Fix removing accounts when Claude and Codex use the same email address.
+  Removal now selects the account by provider and organization, preserving
+  the other account with the same email.
+- Show the provider in the removal confirmation and operation label.
+- Add regression tests for removal in both directions, organization selection,
+  and refusing ambiguous or invalid selections.
+- Bundles TeamClaude 1.1.26 with the account-removal fix.
 
 Windows installer and Linux AppImage copies support automatic updates.
 Portable Windows and Debian packages are updated by downloading/installing the new file.
