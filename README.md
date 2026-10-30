@@ -33,7 +33,7 @@ Already logged into Claude Code? `teamclaude import` takes its credentials inste
 
 ![TeamClaude Desktop: live quotas, adding a service, connection test, routing, and Russian interface](docs/assets/desktop-demo.gif)
 
-The walkthrough uses placeholder accounts, seeded quota readings and a local demo API. It shows adding an Anthropic-compatible service, testing a model, saving it, changing distribution and switching the interface to Russian.
+The walkthrough uses placeholder accounts, seeded quota readings and a local demo API. It shows adding an Anthropic-compatible service, listing available models, saving it, changing distribution and switching the interface to Russian.
 
 ## What it does
 
