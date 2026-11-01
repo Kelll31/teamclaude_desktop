@@ -8,18 +8,22 @@ name: Desktop
 on:
   workflow_dispatch:
   push:
-    branches: [master]
+    branches: [master, main, codex/upstream-desktop]
     paths:
       - 'desktop/**'
       - 'src/**'
       - 'package.json'
+      - 'README.md'
+      - 'docs/desktop*.md'
       - '.github/workflows/desktop.yml'
   pull_request:
-    branches: [master]
+    branches: [master, main, codex/upstream-desktop]
     paths:
       - 'desktop/**'
       - 'src/**'
       - 'package.json'
+      - 'README.md'
+      - 'docs/desktop*.md'
       - '.github/workflows/desktop.yml'
 
 permissions:

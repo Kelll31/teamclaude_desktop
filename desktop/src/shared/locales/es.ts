@@ -418,7 +418,7 @@ export const es: Record<MessageKey, string> = {
   // ── acerca de ──
   'about.title': 'Acerca de',
   'about.communityTitle': 'Versión de la comunidad',
-  'about.communityBody': 'Esta app de escritorio es una contribución a TeamClaude y no es una versión oficial de TeamClaude. El proyecto canónico es github.com/KarpelesLab/teamclaude y el paquete npm @karpeleslab/teamclaude (consulta SECURITY.md).',
+  'about.communityBody': 'Proyecto de escritorio independiente de la comunidad: github.com/Kelll31/teamclaude. El proxy original es github.com/KarpelesLab/teamclaude, publicado como @karpeleslab/teamclaude.',
   'about.versions': 'Versiones',
   'about.desktop': 'Escritorio',
   'about.bundled': 'Backend incluido',

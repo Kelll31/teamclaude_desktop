@@ -1,128 +1,66 @@
-# TeamClaude
+# TeamClaude Desktop
 
-[![CI](https://github.com/KarpelesLab/teamclaude/actions/workflows/ci.yml/badge.svg)](https://github.com/KarpelesLab/teamclaude/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@karpeleslab/teamclaude.svg)](https://www.npmjs.com/package/@karpeleslab/teamclaude)
-[![node](https://img.shields.io/node/v/@karpeleslab/teamclaude.svg)](https://nodejs.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+Independent community desktop panel for [TeamClaude](https://github.com/KarpelesLab/teamclaude), developed in [Kelll31/teamclaude](https://github.com/Kelll31/teamclaude). Windows and Linux, Electron + React, MIT licensed.
 
-Multi-account proxy for [Claude Code](https://claude.ai/claude-code) and [Codex](https://github.com/openai/codex): it pools Claude Max, ChatGPT/Codex, API-key and third-party backend accounts, and rotates on quota.
+The desktop app is maintained here. It is not an official KarpelesLab release.
+The TeamClaude proxy remains the backend: the panel uses its control API and CLI
+for accounts, routing, quota and proxy lifecycle.
 
-It sits between the coding agent and the provider's API, holds several accounts, and moves to the next one when the current account gets close to its session or weekly limit. The session keeps running instead of stopping on a 429. Claude accounts serve Claude Code, Codex accounts serve the Codex CLI, and both pools share one proxy.
+![Desktop walkthrough](docs/assets/desktop-demo.gif)
 
-**It is built for one person.** The "team" is the agents: someone running ten, or fifty, coding-agent sessions at once needs more than one subscription, and switching accounts by hand each time one fills up is what this replaces. Every account in the pool is your own, and the client is the provider's own CLI. It is not a way to share an account between people, and not a bridge for other clients onto subscription credentials — see [Scope](#scope).
+## Run from source
 
-![TeamClaude TUI](screenshots/teamclaude.png)
-
-## Quick start
-
-Node.js 20+ required.
+Requires Node.js 20+ and npm. From this repository:
 
 ```bash
-npm install -g @karpeleslab/teamclaude
-
-teamclaude login     # browser OAuth, run it once per account
-teamclaude server    # start the proxy, shows the TUI
-teamclaude run       # in another terminal: Claude Code through the proxy
+cd desktop
+npm ci
+npm run dev
 ```
 
-Already logged into Claude Code? `teamclaude import` takes its credentials instead of a fresh OAuth round. A container image is on GHCR — see [Running in a container](docs/usage.md#running-in-a-container). API keys, and one email holding accounts in several orgs, are covered in [docs/accounts.md](docs/accounts.md).
+The app uses the backend checkout in `src/` during development. Packaged builds
+bundle it and run it with Electron's Node runtime, so end users need no Node.js.
+Existing TeamClaude accounts and configuration are reused.
 
-## Desktop preview
+## Features
 
-An optional Windows/Linux desktop control panel is proposed in [#582](https://github.com/KarpelesLab/teamclaude/issues/582). It starts or attaches to the local proxy, shows account quotas and manages accounts and routing through the control API and CLI. Build from source or use the review artifacts; this proposal configures no desktop release feed. See [the desktop guide](docs/desktop.md).
+- Start and stop the local proxy, or attach to an already running one.
+- Manage Claude, Codex and API backend accounts through the CLI and control API.
+- Monitor quotas, sessions, usage, activity and health.
+- Configure routing, editor integrations, tray behaviour and notifications.
+- Use English, Russian and seven other interface languages.
 
-![Desktop preview: quotas, service setup, routing and languages](docs/assets/desktop-demo.gif)
+[User guide](docs/desktop.md) · [Architecture](docs/desktop-architecture.md) ·
+[Development direction](docs/desktop-roadmap.md) · [Backend CLI reference](README-core.md)
 
-The recording uses placeholder accounts, seeded quota readings and a local test API.
+## Checks and packages
 
-## What it does
-
-- Rotates to the next account when the 5h session or 7d weekly bucket reaches the threshold (98% by default), preferring the account whose weekly quota resets soonest.
-- Tracks the per-model weekly cap separately, so an account out of Fable quota is skipped for Fable requests and still serves Opus and Sonnet.
-- Tells a spent quota bucket apart from a per-minute rate limit and only rotates on the first one. Rotating on a rate limit would just move the burst to the next account and drop the warm cache, so it paces the same account instead.
-- Paces requests onto a freshly switched account, so a herd of agents failing over at the same instant doesn't throttle it and cascade down the fleet.
-- TUI with quota bars, reset countdowns, activity log, and settings you can change while it runs, including adding and removing accounts.
-- Opt-in MCP endpoint that hands the same control plane to Claude Code as tools, so an agent can read the fleet's quota or switch accounts from inside a session.
-- Catches hardcoded `api.anthropic.com` endpoints (the Claude Design MCP, for one) through a local MITM forward proxy, not only what `ANTHROPIC_BASE_URL` covers.
-- Holds the request open until quota resets instead of returning 429 when every account is spent, so an unattended run finishes on its own (`holdSeconds`, off by default).
-- Optionally leans on accounts with Anthropic's paid extra usage once every account is out of free quota, instead of returning 429 (`allowExtraUsage`, off by default — it bills real money). Quota between the switch threshold and 100% is used first, on any account; billing starts only when none is left, and stops as soon as a window resets.
-- Refreshes OAuth tokens before they expire and writes them back to config. Client refreshes pass through untouched.
-- Pools OpenAI Codex subscriptions alongside Claude accounts (experimental): the Codex CLI is routed through the same proxy, by config or transparently through the MITM proxy, and rotates on its own quota.
-- Takes any Anthropic-compatible API (DeepSeek, GLM) as a low-priority fallback for when the Claude accounts are done.
-- Sends one account's traffic through its own HTTP or SOCKS proxy (`login --routing "socks5h://user:pass@host:1080"`), sign-in and token refresh included, and leaves every other account alone. If that proxy goes down, the request fails over to the next account.
-- No dependencies. Node built-ins only.
-
-## Everyday commands
+Run inside `desktop/`:
 
 ```bash
-teamclaude accounts          # accounts with tier and token status
-teamclaude status            # live proxy status, needs a running server
-teamclaude disable <name>    # pause an account without removing it
-teamclaude priority <name> 1 # rotation order, lower = preferred
-teamclaude alias --install   # make plain `claude` go through the proxy
-teamclaude help              # everything else
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run test:e2e
 ```
 
-Full reference: [docs/usage.md](docs/usage.md).
+End-to-end tests need a desktop display (Xvfb on Linux).
+`npm run dist:win` builds an installer and portable executable;
+`npm run dist:linux` builds AppImage and deb packages on Linux.
+Artifacts go to `desktop/dist/`. The Desktop workflow also builds unsigned
+Windows and Linux artifacts for testing; no automatic release publishing is enabled.
 
-## Configuration
+Report desktop bugs and feature requests in [this repository's issues](https://github.com/Kelll31/teamclaude/issues).
 
-Config is at `~/.config/teamclaude.json` (`$XDG_CONFIG_HOME` honoured) and is meant to be hand-editable. A proxy API key is generated on first use. Observed quota goes to a separate `teamclaude.state.json` next to it, safe to delete since quota gets re-learned from traffic.
+## Relationship to upstream
 
-Every field, plus environment variables and network tuning: [docs/configuration.md](docs/configuration.md).
+Following the maintainer's direction in [#582](https://github.com/KarpelesLab/teamclaude/issues/582)
+and [#618](https://github.com/KarpelesLab/teamclaude/issues/618), the panel is developed
+as a community project. This fork is its current home; the backend source and its
+MIT attribution remain intact. Desktop development does not depend on an upstream
+merge of the panel.
 
-## How it works
-
-1. Claude Code talks to the local proxy instead of `api.anthropic.com`.
-2. The proxy picks an eligible account, injects that account's real token, and rewrites `account_uuid` in the body to match.
-3. `anthropic-ratelimit-unified-*` response headers feed the session (5h) and weekly (7d) quota view, which survives a restart.
-4. At the threshold, rotation moves on. On a quota 429 the request is resent on another account, so the client never sees the limit while some account still has headroom.
-5. Expiring tokens, transient network errors and client token refreshes are handled inside the proxy, so none of them interrupt the session.
-
-Step-by-step lifecycle: [docs/routing.md](docs/routing.md#request-lifecycle).
-
-## Documentation
-
-| Page | Contents |
-| --- | --- |
-| [Accounts](docs/accounts.md) | OAuth login, import, API keys, multiple orgs, syncing tokens across machines via callback.net, per-account proxy routing, Codex accounts, third-party backends |
-| [Usage](docs/usage.md) | Server and TUI, running Claude Code, shell alias, command reference, browser dashboard, MCP endpoint, logging |
-| [VS Code](docs/vscode.md) | The Claude Code extension for VS Code through the proxy: settings, a check, updates |
-| [Routing](docs/routing.md) | Rotation, the two kinds of 429, storm control, model routes, session spreading, pinning, prompt cache |
-| [Quota](docs/quota.md) | Quota probe, keep-warm, holding on exhaustion |
-| [Configuration](docs/configuration.md) | Config format, every field, environment variables, network tuning |
-| [Proxy modes](docs/proxy-modes.md) | MITM forward proxy, upstream proxy, per-account routing, sx.org residential egress |
-| [Compliance](docs/compliance.md) | Who the project is for, and terms of service notes for each provider |
-| [Contributing](CONTRIBUTING.md) | What is in scope, and what a pull request needs |
-
-## Renaming to TeamRouter
-
-TeamClaude is becoming **TeamRouter** — it pools Codex and third-party accounts as well as Claude ones, and the name should say so. The rename is spread over several releases so that nothing installed, scripted or configured breaks; the plan and its progress are in [issue #72](https://github.com/KarpelesLab/teamclaude/issues/72). As of this release the new name is *accepted* everywhere while the old one stays canonical: `teamrouter` runs the same CLI as `teamclaude`, every `TEAMCLAUDE_*` variable is also read as `TEAMROUTER_*`, every `/teamclaude/…` control route also answers at `/teamrouter/…`, and a `~/.config/teamrouter.json` is used when it exists. Nothing on an existing install needs to change, now or when the default flips.
-
-## Security
-
-The only canonical sources for TeamClaude are this repository (https://github.com/KarpelesLab/teamclaude) and the [`@karpeleslab/teamclaude`](https://www.npmjs.com/package/@karpeleslab/teamclaude) npm package. TeamClaude is **never** distributed as a downloadable binary archive, so be wary of soft-forks that bundle a `.zip` and tell you to extract and run it. See [SECURITY.md](SECURITY.md) for details and how to report issues.
-
-## Scope
-
-TeamClaude is a local proxy holding your own credentials and driving the provider's own CLI, for one person's work. That holds for every provider it supports, not only Anthropic:
-
-- **One person, their own accounts.** Not account sharing, not a hosted service, not resale.
-- **The provider's own client.** Claude Code on Claude accounts, the Codex CLI on Codex accounts. No support for other harnesses on subscription credentials.
-- **A third-party backend is an account like any other:** a key you were issued, used under that vendor's terms.
-
-How this lines up with the providers' terms, including the multi-subscription question people ask most, is written up in [docs/compliance.md](docs/compliance.md). Not legal advice. Changes that step outside this scope are not merged; see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Star history
-
-<a href="https://www.star-history.com/?repos=KarpelesLab%2Fteamclaude&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=KarpelesLab/teamclaude&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=KarpelesLab/teamclaude&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=KarpelesLab/teamclaude&type=date&legend=top-left" />
- </picture>
-</a>
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+Small backend improvements such as provider-scoped removal and JSON stdin for
+`add-backend` can be proposed separately. Backend npm updates still come from
+`@karpeleslab/teamclaude`; desktop links and support point here.

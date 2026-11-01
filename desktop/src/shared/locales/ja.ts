@@ -403,7 +403,7 @@ export const ja: Record<MessageKey, string> = {
 
   'about.title': '情報',
   'about.communityTitle': 'コミュニティビルド',
-  'about.communityBody': 'このデスクトップアプリは TeamClaude への貢献であり、TeamClaude の公式リリースではありません。正規のプロジェクトは github.com/KarpelesLab/teamclaude と npm パッケージ @karpeleslab/teamclaude です（SECURITY.md を参照）。',
+  'about.communityBody': '独立したコミュニティのデスクトッププロジェクト：github.com/Kelll31/teamclaude。上流のプロキシは github.com/KarpelesLab/teamclaude、npm パッケージは @karpeleslab/teamclaude です。',
   'about.versions': 'バージョン',
   'about.desktop': 'Desktop',
   'about.bundled': '同梱のバックエンド',

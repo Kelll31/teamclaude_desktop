@@ -1,5 +1,8 @@
 # TeamClaude Desktop
 
+An independent community project maintained in [Kelll31/teamclaude](https://github.com/Kelll31/teamclaude).
+Desktop issues, documentation and builds belong to this repository.
+
 A desktop control panel for the local TeamClaude proxy, for Windows 10/11 x64
 and Linux x64. It starts, stops and watches the proxy, shows quota and reset
 times for every account, and runs the everyday account and routing commands
@@ -46,7 +49,7 @@ commands keep their behavior.
 Routing results and distribution names follow the selected interface language.
 Original CLI output remains available under **Technical details** for diagnosis.
 
-> Desktop builds are not official TeamClaude releases yet. Build them from
+> Desktop builds are independent community builds, not official KarpelesLab releases. Build them from
 > source, or use artifacts from this repository's CI for testing only.
 
 ## Install
@@ -218,7 +221,7 @@ carries a credential or a config file. The Linux `.deb` needs `fakeroot` and
 
 ## Optional updates
 
-This proposal does not publish desktop releases or configure an update feed.
+This repository currently builds CI artifacts without publishing desktop releases or configuring an update feed.
 The packaging config uses `publish: null`; CI packages are unsigned artifacts
 for review and testing. App and proxy-core automatic updates are **off by
 default**. App updates are unavailable without a packager-configured feed.
@@ -295,7 +298,7 @@ an issue.
 | Diagnostics | Export diagnostics | The report numbers accounts and contains no token, key or email |
 | Uninstall | Uninstall the app | The TeamClaude config and accounts remain |
 
-Record which rows passed, on what OS and version, in the pull request; rows
+Record which rows passed, on what OS and version, in the desktop pull request; rows
 not run are listed as not verified.
 
 ## Troubleshooting

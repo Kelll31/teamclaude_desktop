@@ -5,8 +5,8 @@
   "private": true,
   "description": "Desktop control panel for a local TeamClaude proxy (Windows and Linux)",
   "license": "MIT",
-  "author": "TeamClaude contributors",
-  "homepage": "https://github.com/KarpelesLab/teamclaude",
+  "author": "Kelll31 and TeamClaude Desktop contributors",
+  "homepage": "https://github.com/Kelll31/teamclaude",
   "main": "out/node/main/index.js",
   "scripts": {
     "prepare:backend": "node scripts/prepare-backend.mjs",
@@ -46,5 +46,13 @@
   },
   "dependencies": {
     "electron-updater": "6.8.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kelll31/teamclaude.git",
+    "directory": "desktop"
+  },
+  "bugs": {
+    "url": "https://github.com/Kelll31/teamclaude/issues"
   }
 }

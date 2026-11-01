@@ -30,6 +30,8 @@ env:
 jobs:
   docker:
     name: build and push
+    # Backend publishing belongs to upstream; this fork develops the desktop.
+    if: github.repository == 'KarpelesLab/teamclaude'
     runs-on: ubuntu-latest
     permissions:
       contents: read

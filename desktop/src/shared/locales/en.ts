@@ -418,7 +418,7 @@ export const en = {
   // ── about ──
   'about.title': 'About',
   'about.communityTitle': 'Community build',
-  'about.communityBody': 'This desktop app is a contribution to TeamClaude and is not an official TeamClaude release. The canonical project is github.com/KarpelesLab/teamclaude and the npm package @karpeleslab/teamclaude (see SECURITY.md).',
+  'about.communityBody': 'Independent community desktop project maintained at github.com/Kelll31/teamclaude. The upstream proxy is github.com/KarpelesLab/teamclaude, published as @karpeleslab/teamclaude.',
   'about.versions': 'Versions',
   'about.desktop': 'Desktop',
   'about.bundled': 'Bundled backend',

@@ -2,7 +2,8 @@
 
 TeamClaude Desktop is a graphical control panel for the local TeamClaude
 proxy on Windows 10/11 x64 and Linux x64. It lives in `desktop/` as a separate
-package. It is another way to drive the proxy you already run, not a new
+package in the independently maintained community repository
+[Kelll31/teamclaude](https://github.com/Kelll31/teamclaude). It is another way to drive the proxy you already run, not a new
 client for subscription quota: model traffic flows through the backend. The
 desktop does not persist account credentials; a user-entered API key exists
 temporarily in the form and main process for saving or testing a service.
@@ -13,7 +14,7 @@ temporarily in the form and main process for saving or testing a service.
   and the config file belong to TeamClaude. The desktop reads state from the
   control API and changes it through the control API or the CLI. It keeps no
   second routing config.
-- **No runtime dependencies added to the core.** The proposal adds an
+- **No runtime dependencies added to the core.** The bundled backend includes an
   `add-backend` CLI command accepting validated JSON on stdin, saving through
   the existing config lock and notifying a running server. Existing CLI
   commands work the same with or without the desktop app installed.
@@ -185,11 +186,11 @@ checkout) is allowed with a warning.
 Builds are unsigned and produced with `--publish never`. Per `SECURITY.md`,
 third-party installers must not be presented as official releases. The
 `desktop` workflow builds artifacts for review only; a release workflow and
-code signing wait for agreement with the maintainers. Automatic app and core
+code signing are managed independently in this repository. Automatic app and core
 update checks are off by default. Manual registry checks can compare the bundled
 and attached backend versions; installing an npm core is an explicit action or
-requires opting into automatic core updates. The desktop app has no release
-feed in this proposal, so its updater reports that it is unavailable.
+requires opting into automatic core updates. The desktop app currently has no release
+feed, so its updater reports that it is unavailable.
 
 ## Known limitations
 

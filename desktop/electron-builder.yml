@@ -1,9 +1,9 @@
 # Packaging for Windows (NSIS installer + portable) and Linux (AppImage + deb).
 # Builds are unsigned and never published from here (`--publish never`); see
 # docs/desktop-architecture.md, "Distribution", for why.
-appId: com.karpeleslab.teamclaude.desktop
+appId: io.github.kelll31.teamclaude.desktop
 productName: TeamClaude Desktop
-copyright: Copyright © TeamClaude contributors (MIT License)
+copyright: Copyright © Kelll31 and TeamClaude Desktop contributors (MIT License)
 directories:
   output: dist
   buildResources: build
@@ -49,6 +49,6 @@ linux:
       arch: [x64]
   category: Development
   icon: build/icon.png
-  maintainer: TeamClaude contributors
+  maintainer: Kelll31 and TeamClaude Desktop contributors
   synopsis: Control panel for the local TeamClaude proxy
   artifactName: TeamClaude-Desktop-${version}-${arch}.${ext}

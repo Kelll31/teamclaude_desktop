@@ -417,7 +417,7 @@ export const uk: Record<MessageKey, string> = {
   // ── about ──
   'about.title': 'Про програму',
   'about.communityTitle': 'Збірка спільноти',
-  'about.communityBody': 'Цей настільний застосунок — внесок у TeamClaude і не є офіційним випуском TeamClaude. Канонічний проєкт — github.com/KarpelesLab/teamclaude та npm-пакет @karpeleslab/teamclaude (див. SECURITY.md).',
+  'about.communityBody': 'Незалежний десктопний проєкт спільноти: github.com/Kelll31/teamclaude. Початковий проксі: github.com/KarpelesLab/teamclaude, npm-пакет @karpeleslab/teamclaude.',
   'about.versions': 'Версії',
   'about.desktop': 'Desktop',
   'about.bundled': 'Вбудований бекенд',

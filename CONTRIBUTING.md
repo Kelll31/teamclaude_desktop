@@ -1,3 +1,18 @@
+# Desktop contributions in this fork
+
+Desktop work is maintained in `Kelll31/teamclaude`, primarily under `desktop/`.
+Use this repository for desktop issues and PRs. Run `npm run typecheck`,
+`npm run lint` and `npm test` inside `desktop/`; build and run the Electron
+end-to-end suite for changes to application behaviour.
+
+Keep backend changes small and separate from desktop features. The backend's
+package identity and npm release source remain upstream's. See
+[the desktop development direction](docs/desktop-roadmap.md).
+
+The original backend contribution guide follows.
+
+---
+
 # Contributing
 
 Issues and pull requests are welcome. This page says what the project is for, since that decides what gets merged, and then what a pull request needs.
