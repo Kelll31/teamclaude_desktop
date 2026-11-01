@@ -3,7 +3,7 @@
 TeamClaude Desktop is a graphical control panel for the local TeamClaude
 proxy on Windows 10/11 x64 and Linux x64. It lives in `desktop/` as a separate
 package in the independently maintained community repository
-[Kelll31/teamclaude](https://github.com/Kelll31/teamclaude). It is another way to drive the proxy you already run, not a new
+[Kelll31/teamclaude_desktop](https://github.com/Kelll31/teamclaude_desktop). It is another way to drive the proxy you already run, not a new
 client for subscription quota: model traffic flows through the backend. The
 desktop does not persist account credentials; a user-entered API key exists
 temporarily in the form and main process for saving or testing a service.

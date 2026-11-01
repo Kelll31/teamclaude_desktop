@@ -1,6 +1,6 @@
 # TeamClaude Desktop
 
-An independent community project maintained in [Kelll31/teamclaude](https://github.com/Kelll31/teamclaude).
+An independent community project maintained in [Kelll31/teamclaude_desktop](https://github.com/Kelll31/teamclaude_desktop).
 Desktop issues, documentation and builds belong to this repository.
 
 A desktop control panel for the local TeamClaude proxy, for Windows 10/11 x64

@@ -1,6 +1,6 @@
 # Desktop contributions in this fork
 
-Desktop work is maintained in `Kelll31/teamclaude`, primarily under `desktop/`.
+Desktop work is maintained in `Kelll31/teamclaude_desktop`, primarily under `desktop/`.
 Use this repository for desktop issues and PRs. Run `npm run typecheck`,
 `npm run lint` and `npm test` inside `desktop/`; build and run the Electron
 end-to-end suite for changes to application behaviour.

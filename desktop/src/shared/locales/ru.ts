@@ -403,7 +403,7 @@ export const ru: Record<MessageKey, string> = {
 
   'about.title': 'О программе',
   'about.communityTitle': 'Сборка сообщества',
-  'about.communityBody': 'Независимый десктопный проект сообщества: github.com/Kelll31/teamclaude. Исходный прокси: github.com/KarpelesLab/teamclaude, npm-пакет @karpeleslab/teamclaude.',
+  'about.communityBody': 'Независимый десктопный проект сообщества: github.com/Kelll31/teamclaude_desktop. Исходный прокси: github.com/KarpelesLab/teamclaude, npm-пакет @karpeleslab/teamclaude.',
   'about.versions': 'Версии',
   'about.desktop': 'Desktop',
   'about.bundled': 'Встроенный бэкенд',

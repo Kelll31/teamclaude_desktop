@@ -1,6 +1,6 @@
 # TeamClaude Desktop
 
-Independent community desktop panel for [TeamClaude](https://github.com/KarpelesLab/teamclaude), developed in [Kelll31/teamclaude](https://github.com/Kelll31/teamclaude). Windows and Linux, Electron + React, MIT licensed.
+Independent community desktop panel for [TeamClaude](https://github.com/KarpelesLab/teamclaude), developed in [Kelll31/teamclaude_desktop](https://github.com/Kelll31/teamclaude_desktop). Windows and Linux, Electron + React, MIT licensed.
 
 The desktop app is maintained here. It is not an official KarpelesLab release.
 The TeamClaude proxy remains the backend: the panel uses its control API and CLI
@@ -51,7 +51,7 @@ End-to-end tests need a desktop display (Xvfb on Linux).
 Artifacts go to `desktop/dist/`. The Desktop workflow also builds unsigned
 Windows and Linux artifacts for testing; no automatic release publishing is enabled.
 
-Report desktop bugs and feature requests in [this repository's issues](https://github.com/Kelll31/teamclaude/issues).
+Report desktop bugs and feature requests in [this repository's issues](https://github.com/Kelll31/teamclaude_desktop/issues).
 
 ## Relationship to upstream
 

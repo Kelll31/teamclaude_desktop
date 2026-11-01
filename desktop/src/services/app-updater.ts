@@ -1,6 +1,6 @@
 // Optional self-update from a release feed configured by the packager,
 // through electron-updater. These are unofficial, unsigned builds; the
-// desktop releases belong to Kelll31/teamclaude. The updater is injected, so the
+// desktop releases belong to Kelll31/teamclaude_desktop. The updater is injected, so the
 // policy here is tested without Electron. A copy that cannot update itself (a
 // development run, the portable .exe, a .deb, a build without a feed) says
 // why and never contacts anything.
@@ -9,7 +9,7 @@ import { EventEmitter } from 'node:events';
 import type { AppUpdateState, AppUpdateUnsupported } from '../shared/types';
 import { describeError } from './sanitize';
 
-export const RELEASES_URL = 'https://github.com/Kelll31/teamclaude/releases';
+export const RELEASES_URL = 'https://github.com/Kelll31/teamclaude_desktop/releases';
 /** Leave the first minute of a launch to the proxy. */
 export const FIRST_CHECK_DELAY_MS = 60_000;
 export const CHECK_INTERVAL_MS = 6 * 60 * 60_000;

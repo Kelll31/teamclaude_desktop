@@ -1,7 +1,7 @@
 # Desktop development direction
 
 TeamClaude Desktop is maintained independently in
-[Kelll31/teamclaude](https://github.com/Kelll31/teamclaude). This replaces the
+[Kelll31/teamclaude_desktop](https://github.com/Kelll31/teamclaude_desktop). This replaces the
 historical upstream panel proposal and split PR plan in `desktop-pr-plan/`.
 
 ## Current layout

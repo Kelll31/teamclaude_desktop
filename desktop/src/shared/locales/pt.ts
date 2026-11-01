@@ -418,7 +418,7 @@ export const pt: Record<MessageKey, string> = {
   // ── about ──
   'about.title': 'Sobre',
   'about.communityTitle': 'Build da comunidade',
-  'about.communityBody': 'Projeto desktop independente da comunidade: github.com/Kelll31/teamclaude. O proxy original é github.com/KarpelesLab/teamclaude, publicado como @karpeleslab/teamclaude.',
+  'about.communityBody': 'Projeto desktop independente da comunidade: github.com/Kelll31/teamclaude_desktop. O proxy original é github.com/KarpelesLab/teamclaude, publicado como @karpeleslab/teamclaude.',
   'about.versions': 'Versões',
   'about.desktop': 'Desktop',
   'about.bundled': 'Backend incluído',

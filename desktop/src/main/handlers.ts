@@ -32,11 +32,11 @@ import { distributionLabel } from '../shared/distribution-label';
 import type { Handlers } from './ipc';
 
 const LINKS = {
-  repository: 'https://github.com/Kelll31/teamclaude',
-  issues: 'https://github.com/Kelll31/teamclaude/issues',
-  docs: 'https://github.com/Kelll31/teamclaude/blob/master/docs/desktop.md',
+  repository: 'https://github.com/Kelll31/teamclaude_desktop',
+  issues: 'https://github.com/Kelll31/teamclaude_desktop/issues',
+  docs: 'https://github.com/Kelll31/teamclaude_desktop/blob/master/docs/desktop.md',
   releases: 'https://github.com/KarpelesLab/teamclaude/releases',
-  license: 'https://github.com/Kelll31/teamclaude/blob/master/LICENSE',
+  license: 'https://github.com/Kelll31/teamclaude_desktop/blob/master/LICENSE',
   desktopReleases: RELEASES_URL,
 } as const;
 

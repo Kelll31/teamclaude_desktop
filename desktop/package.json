@@ -6,7 +6,7 @@
   "description": "Desktop control panel for a local TeamClaude proxy (Windows and Linux)",
   "license": "MIT",
   "author": "Kelll31 and TeamClaude Desktop contributors",
-  "homepage": "https://github.com/Kelll31/teamclaude",
+  "homepage": "https://github.com/Kelll31/teamclaude_desktop",
   "main": "out/node/main/index.js",
   "scripts": {
     "prepare:backend": "node scripts/prepare-backend.mjs",
@@ -49,10 +49,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Kelll31/teamclaude.git",
+    "url": "git+https://github.com/Kelll31/teamclaude_desktop.git",
     "directory": "desktop"
   },
   "bugs": {
-    "url": "https://github.com/Kelll31/teamclaude/issues"
+    "url": "https://github.com/Kelll31/teamclaude_desktop/issues"
   }
 }

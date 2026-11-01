@@ -418,7 +418,7 @@ export const zh: Record<MessageKey, string> = {
   // ── 关于 ──
   'about.title': '关于',
   'about.communityTitle': '社区构建',
-  'about.communityBody': '独立的社区桌面项目：github.com/Kelll31/teamclaude。上游代理为 github.com/KarpelesLab/teamclaude，npm 包名为 @karpeleslab/teamclaude。',
+  'about.communityBody': '独立的社区桌面项目：github.com/Kelll31/teamclaude_desktop。上游代理为 github.com/KarpelesLab/teamclaude，npm 包名为 @karpeleslab/teamclaude。',
   'about.versions': '版本',
   'about.desktop': '桌面版',
   'about.bundled': '内置后端',
